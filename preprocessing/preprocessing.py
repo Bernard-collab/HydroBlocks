@@ -953,12 +953,13 @@ def summarize_domain_decompisition(md):
  #Iterate through each feature getting the necessary info
  layer = ds.GetLayer()
  output = []
+ print("layer: ", layer, flush=True)
  for feature in layer:
-   info = {}
-   bbox = feature.GetGeometryRef().GetEnvelope()
-   info['cid'] = feature.GetField(cid)
-   info['bbox'] =  {'minlat':bbox[2],'minlon':bbox[0],'maxlat':bbox[3],'maxlon':bbox[1]}
-   output.append(info)
+  info = {}
+  bbox = feature.GetGeometryRef().GetEnvelope()
+  info['cid'] = feature.GetField(cid)
+  info['bbox'] =  {'minlat':bbox[2],'minlon':bbox[0],'maxlat':bbox[3],'maxlon':bbox[1]}
+  output.append(info)
 
  #Close the shapefile file
  del ds, ogr, layer, bbox, info
@@ -987,7 +988,7 @@ def Create_Mask(cdb,workspace,metadata,icatch,log):
  tmp_file = '%s/tmp.tif' % workspace
  
  #Rasterize the area
- buff = 0.1
+ buff = 0.25
  
  print(' buffer size:',buff,' icatch:',ci,flush=True) 
  minx = bbox['minlon']-buff
@@ -1039,7 +1040,7 @@ def Correct_Mask(cdb,workspace,metadata,icatch,log):
  acc = 10**6*gdal_tools.read_data('%s/acc_latlon.tif' % workspace).data #km2->m2
 
  #2. Update the mask
- m2 = np.copy(mask).astype(np.bool)
+ m2 = np.copy(mask).astype(bool)
  m2[:] = 0
  m2[dem != -9999] = 1
  m2[admin <= 0] = 0
@@ -1165,13 +1166,13 @@ def Terrain_Analysis(cdb,workspace,metadata,icatch,log):
  data = gdal_tools.read_raster(acc_latlon_file)
  metadata = gdal_tools.retrieve_metadata(acc_latlon_file)
  metadata['nodata'] = -9999.0
- #data[data == -32768] = -9999.0
+ data[data == -32768] = -9999.0
  gdal_tools.write_raster(acc_latlon_file,metadata,data)
 
  data = gdal_tools.read_raster(fdir_latlon_file)
  metadata = gdal_tools.retrieve_metadata(fdir_latlon_file)
  metadata['nodata'] = -9999.0
- #data[data == -32768] = -9999.0
+ data[data == -32768] = -9999.0
  gdal_tools.write_raster(fdir_latlon_file,metadata,data)
 
  mask = gdal_tools.read_raster('%s/mask_latlon.tif' % workspace)
@@ -1663,6 +1664,211 @@ def Extract_Meteorology_Daily(cdb,workspace,metadata,icatch,log):
 
  return
 
+
+
+
+
+def Extract_Meteorology_MSWX(cdb, workspace, metadata, icatch, log):
+    """
+    Extracts, subsets, and processes MSWX meteorological data.
+
+    This function is specifically adapted for the MSWX data structure where each
+    variable is in a separate folder, and files are organized by 3-hourly
+    timesteps with the naming convention YYYYDDD.HH.nc (Year, Day-of-Year, Hour).
+    """
+
+    # Define memory constant for GDAL cache
+    mb = 1024 * 1024
+
+    # Get the catchment's geographic boundaries from the mask file
+    md_mask = gdal_tools.retrieve_metadata(f'{workspace}/mask_latlon.tif')
+    cminlon, cminlat = md_mask['minx'], md_mask['miny']
+    cmaxlon, cmaxlat = md_mask['maxx'], md_mask['maxy']
+
+
+    startdate_str = metadata['meteo']['startdate']
+    enddate_str = metadata['meteo']['enddate']
+
+    # Define time range for data extraction
+    startdate = datetime.datetime.strptime(startdate_str, '%d%b%Y')
+
+    # Parse the end date and set the time to the end of that day.
+    # This ensures that all 3-hourly timesteps on the last day are included in the loop.
+    enddate_obj = datetime.datetime.strptime(enddate_str, '%d%b%Y')
+    enddate = enddate_obj.replace(hour=23, minute=59)
+
+
+    # --- KEY CHANGE: Map standard variable names to MSWX folder names ---
+    var_map = {
+        'tair': "Temp", 'spfh': "SpecHum", 'psurf': "Pres", 'wind': "Wind",
+        'swdown': "SWd", 'lwdown': "LWd", 'precip': "P"
+    }
+
+    var_name_map = {
+        'tair': "air_temperature", 'spfh': "specific_humidity", 'psurf': "surface_pressure", 'wind': "wind_speed",
+        'swdown': "downward_shortwave_radiation", 'lwdown': "downward_longwave_radiation", 'precip': "precipitation"
+    }
+
+    vars_to_process = list(var_map.keys())
+    shuffle(vars_to_process)
+
+    # --- Main loop to process each meteorological variable ---
+    for var in vars_to_process:
+        folder_name = var_map[var]
+        var_path = os.path.join(metadata['meteo']['dir'], folder_name)
+
+        # --- Get spatial metadata (lat, lon, undef) from a sample file ---
+        # Construct the path to the first file to read grid info
+        start_jday = startdate.timetuple().tm_yday
+        sample_filename = f'{startdate.year}{start_jday:03d}.{startdate.hour:02d}.nc'
+        sample_filepath = os.path.join(var_path, sample_filename)
+
+        if not os.path.exists(sample_filepath):
+            print(f"ERROR: Sample file not found at {sample_filepath}. Skipping variable '{var}'.")
+            continue
+
+        with nc.Dataset(sample_filepath, 'r') as fp:
+            lats = fp.variables['lat'][:]
+            lons = fp.variables['lon'][:]
+            undef = fp.variables[var_name_map[var]]._FillValue
+
+        # Check if latitude is in descending order (North to South)
+        if lats[0] > lats[-1]:
+            # If descending, max lat (north) has a smaller index than min lat (south)
+            iminlat = np.argmin(np.abs(lats - cmaxlat)) - 1
+            imaxlat = np.argmin(np.abs(lats - cminlat)) + 1
+        else:
+            # If ascending, the original logic is correct
+            iminlat = np.argmin(np.abs(lats - cminlat)) - 1
+            imaxlat = np.argmin(np.abs(lats - cmaxlat)) + 1
+
+        # Longitude is typically always ascending (-180 to 180)
+        iminlon = np.argmin(np.abs(lons - cminlon)) - 1
+        imaxlon = np.argmin(np.abs(lons - cmaxlon)) + 1
+
+        # Boundary checks (these remain the same)
+        if iminlat < 0: iminlat = 0
+        if imaxlat >= lats.size: imaxlat = lats.size - 1
+        if iminlon < 0: iminlon = 0
+        if imaxlon >= lons.size: imaxlon = lons.size - 1
+        
+        minlat, maxlat = lats[iminlat], lats[imaxlat]
+        minlon, maxlon = lons[iminlon], lons[imaxlon]
+        resy = (lats[-1] - lats[0]) / len(lats) if len(lats) > 1 else 0
+        resx = (lons[-1] - lons[0]) / len(lons) if len(lons) > 1 else 0
+        res = (abs(resx) + abs(resy)) / 2.
+        nlon = imaxlon - iminlon + 1
+        nlat = imaxlat - iminlat + 1
+
+        if nlon <= 0 or nlat <= 0:
+            print(f"ERROR: Spatial dimensions are invalid for var '{var}'. nlat={nlat}, nlon={nlon}.")
+            print(f"Check if the catchment bounds ({cminlon}, {cminlat}, {cmaxlon}, {cmaxlat}) are valid.")
+            continue # Skip to the next variable
+        
+        # --- Prepare for data reading loop ---
+        tstep_hours = 3  # KEY CHANGE: MSWX is 3-hourly
+        dt = datetime.timedelta(hours=tstep_hours)
+        total_hours = (enddate - startdate).total_seconds() / 3600
+        nts = int(total_hours / tstep_hours) + 1
+
+        if nts <= 0:
+            print(f"ERROR: Time period is invalid for var '{var}'. nts={nts}.")
+            print(f"Is enddate ({enddate_str}) before startdate ({startdate_str})?")
+            continue # Skip to the next variable
+        
+        data = np.zeros((nts, nlat, nlon), dtype=np.float32)
+
+        # --- KEY CHANGE: Loop through time by 3-hour steps ---
+        current_date = startdate
+        it = 0  # Time index for the output array
+        
+        while current_date <= enddate and it < nts:
+            tic = time.time()
+            
+            # Construct filename: YYYYDOY.HH.nc
+            jday = current_date.timetuple().tm_yday
+            filename = f'{current_date.year}{jday:03d}.{current_date.hour:02d}.nc'
+            filepath = os.path.join(var_path, filename)
+
+            if os.path.exists(filepath):
+                with nc.Dataset(filepath, 'r') as fp:
+                    # MSWX files often have a time dimension of size 1.
+                    try:
+                        tmp = fp.variables[var_name_map[var]][0, iminlat:imaxlat+1, iminlon:imaxlon+1]
+                    except IndexError: # Fallback if no time dimension
+                        tmp = fp.variables[var_name_map[var]][iminlat:imaxlat+1, iminlon:imaxlon+1]
+                    data[it, :, :] = tmp
+                #print(f"{icatch} {var} {current_date} {tmp.shape} {time.time()-tic:.2f}s", flush=True)
+            else:
+                # Handle missing files by filling with a placeholder and printing a warning
+                data[it, :, :] = np.nan
+                print(f"Warning: File not found {filepath}. Data for this step will be filled.", flush=True)
+
+            current_date += dt
+            it += 1
+        
+        gc.collect()
+
+        # --- Post-process the data array ---
+        correction = {'precip':0.0, 'tair':273.0, 'wind':2.0, 'spfh':0.01, 'lwdown':200.0, 'swdown':0.0, 'psurf':90000}
+        fill_value = correction.get(var, 0.0)
+        
+        data[data == undef] = fill_value
+        data[np.isnan(data)] = fill_value # Replace NaNs from missing files
+        data[data < -1000] = fill_value
+
+        if var =='tair':
+            # Convert temperature from Kelvin to Celsius
+            data += 273.15
+        elif var == 'precip':
+            # Convert from mm/3h to mm/s
+            data /= (3 * 3600.0)
+
+        # --- Write processed data to a new NetCDF file ---
+        ncfile = f'{workspace}/{var}.nc'
+        md_out = {
+            'nlat': nlat, 'nlon': nlon, 'minlat': minlat, 'minlon': minlon,
+            'maxlat': maxlat, 'maxlon': maxlon, 'res': res, 'undef': -9999.0,
+            'file': ncfile, 'nt': data.shape[0],
+            'tinitial': startdate,
+            'tinitial_all': startdate,
+            'tstep': f'{tstep_hours}h',
+            'vars': [var]
+        }
+        
+        # Create and write to the NetCDF file
+        with Create_NETCDF_File(md_out) as fp_out:
+            fp_out.variables[var][:] = data
+        
+        del data, fp_out
+        gc.collect()
+
+        # --- GDAL Regridding Steps (unchanged from original function) ---
+        mask_latlon_file = f'{workspace}/mask_latlon.tif'
+        file_coarse = f'{workspace}/{var}_latlon_coarse.tif'
+        cache = int(psutil.virtual_memory().available * 0.7 / mb)
+        os.system(f'gdalwarp -tr {res:.16f} {res:.16f} -te {minlon-res/2:.16f} {minlat-res/2:.16f} {maxlon+res/2:.16f} {maxlat+res/2:.16f} --config GDAL_CACHEMAX {cache} {mask_latlon_file} {file_coarse} >> {log} 2>&1')
+        
+        maskij = gdal_tools.read_raster(file_coarse)
+        metadata_maskij = gdal_tools.retrieve_metadata(file_coarse)
+        for i in range(maskij.shape[0]):
+            maskij[i,:] = np.arange(i * maskij.shape[1], (i + 1) * maskij.shape[1])
+        metadata_maskij['nodata'] = -9999.0
+        gdal_tools.write_raster(file_coarse, metadata_maskij, np.flipud(maskij))
+        del maskij
+        gc.collect()
+        
+        md_fine = gdal_tools.retrieve_metadata(f'{workspace}/mask_latlon.tif')
+        minx, miny, maxx, maxy = md_fine['minx'], md_fine['miny'], md_fine['maxx'], md_fine['maxy']
+        res_fine = abs(md_fine['resx'])
+        lproj = md_fine['proj4']
+        
+        file_in = file_coarse
+        file_out = f'{workspace}/{var}_latlon_fine.tif'
+        os.system(f'gdalwarp -t_srs \'{lproj}\' -dstnodata -9999 -tr {res_fine:.16f} {res_fine:.16f} -te {minx:.16f} {miny:.16f} {maxx:.16f} {maxy:.16f} --config GDAL_CACHEMAX {cache} {file_in} {file_out} >> {log} 2>&1')
+
+    return
+
 def prepare_input_data(cdir,cdb,metadata,rank,icatch):
  
  #Create the workspace
@@ -1704,8 +1910,13 @@ def prepare_input_data(cdir,cdb,metadata,rank,icatch):
 
  #Create meteorology product
  print(rank,'Preparing the meteorological data',time.ctime(),icatch,flush=True)
- #Extract_Meteorology(cdb,workspace,metadata,icatch,log)
- Extract_Meteorology_Daily(cdb,workspace,metadata,icatch,log)
+ if metadata['meteo']['dataset'] == 'PCF':
+  #Extract_Meteorology(cdb,workspace,metadata,icatch,log)
+  Extract_Meteorology_Daily(cdb,workspace,metadata,icatch,log)
+ elif metadata['meteo']['dataset'] == 'MSWX':
+  Extract_Meteorology_MSWX(cdb,workspace,metadata,icatch,log)
+ else:
+  raise ValueError("Unknown meteorological dataset specified in metadata. You must specify 'PCF' or 'MSWX'.")
 
  return
 
@@ -1829,7 +2040,7 @@ def correct_domain_decomposition(comm,metadata):
   #Create soil product
   print(rank,'Preparing the soil data',time.ctime(),cid,flush=True)
   Extract_Soils(cdb[ic],cdir,metadata,cid,log)
-
+  '''
   #Create meteo file
   #file_in = '/gpfs/f5/gfdl_b/proj-shared/Nathaniel.Chaney/datasets/PCF/1hr/tair.tif'
   file_in = '%s/tair.tif' % (metadata['meteo']['dir'],)
@@ -1843,23 +2054,25 @@ def correct_domain_decomposition(comm,metadata):
   file_out = '%s/meteo_latlon.tif' % cdir
   cache = int(psutil.virtual_memory().available*0.7/mb)
   os.system('gdalwarp -t_srs \'%s\' -dstnodata -9999 -r bilinear -tr %.16f %.16f -te %.16f %.16f %.16f %.16f --config GDAL_CACHEMAX %i %s %s >> %s 2>&1' % (lproj,res,res,minx,miny,maxx,maxy,cache,file_in,file_out,log))
+  
+  '''
 
   #Determine number of pixels
   file = '%s/mask_latlon.tif' % workspace
   mask = rasterio.open(file).read(1)
   file = '%s/sand/sand_latlon_2.5cm.tif' % workspace
   sand = rasterio.open(file).read(1)
-  file = '%s/meteo_latlon.tif' % workspace
-  meteo = rasterio.open(file).read(1)
+  #file = '%s/meteo_latlon.tif' % workspace
+  #meteo = rasterio.open(file).read(1)
   file = '%s/lc_latlon.tif' % workspace
   lc = rasterio.open(file).read(1)
   npx_mask = np.sum(mask == cid)
   npx_sand = np.sum(sand != -9999)
-  npx_meteo = np.sum(meteo != -9999)
+  #npx_meteo = np.sum(meteo != -9999)
   npx_lc = np.sum(lc != -9999)
-  odb[cid] = min(npx_mask,npx_sand,npx_meteo,npx_lc)
+  odb[cid] = min(npx_mask,npx_sand,npx_lc) # Adnan and Onur removed  npx_meteo chack later with Noemi
   #odb[cid] = min(npx_mask,npx_meteo,npx_lc)
-  print(npx_mask,npx_sand,npx_meteo,npx_lc,flush=True)
+  #print(npx_mask,npx_sand,npx_meteo,npx_lc,flush=True)
   #print(npx_mask,npx_meteo,npx_lc,flush=True)
 
  #Broadcast and collect

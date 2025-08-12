@@ -216,6 +216,8 @@ class HydroBlocks:
   self.routing_module = info['routing_module']['type']
   self.routing_flag = info['routing_module']['flag']
   self.routing_surface_coupling = info['routing_module']['surface_coupling']
+  if self.routing_module == 'particle_tracker' and self.routing_surface_coupling == True:
+    exit('Surface coupling is not implemented with the particle tracker routing module. Please set "surface_coupling" to False in the routing module configuration.')
   #self.hwu_flag = info['water_management']['hwu_flag']
   self.area = self.input_fp.groups['parameters'].variables['area'][:]
   self.pct = self.input_fp.groups['parameters'].variables['area_pct'][:]/100
@@ -597,6 +599,9 @@ class HydroBlocks:
 
   if self.routing_module == 'particle_tracker':self.initialize_particle_tracker()
 
+  if self.routing_module not in ['kinematic','particle_tracker']:
+   raise ValueError('Routing module %s not recognized. Please use "kinematic" or "particle_tracker".' % self.routing_module)
+
   return
 
  def initialize_particle_tracker(self,):
@@ -850,7 +855,8 @@ class HydroBlocks:
   self.itime = self.itime + 1
 
   #Output some statistics
-  string = '|%d|%s|%s|%s|%s|%s|%s|%s|' % \
+  if (date.minute ==0) and (date.hour == 0): # Print only daily
+   string = '|%d|%s|%s|%s|%s|%s|%s|%s|' % \
         ('CID:%d' % self.cid,\
          'Date:%s' % date.strftime("%Y-%m-%d_%H:%M"),\
          'Runtime:%.2f(s)'%(self.runtime),\

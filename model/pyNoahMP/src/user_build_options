@@ -1,24 +1,24 @@
-
 #=============================================================================================
 #  Options for Linux with gfortran (not fully tested)
 #=============================================================================================
 
- COMPILERF90    =       /usr/bin/gfortran
- FREESOURCE     =       -ffree-form  -ffree-line-length-none
+ COMPILERF90    =       /opt/apps/software/GCCcore/13.2.0/bin/gfortran
+ FREESOURCE     =       -ffree-form  -ffree-line-length-none -cpp
 # F90FLAGS       =       -g -fconvert=big-endian -fbounds-check -fno-range-check -fno-underscoring
- F90FLAGS       =       -g -fconvert=big-endian -fbounds-check -fno-range-check -fPIC
+ F90FLAGS       =       -g -fconvert=big-endian -O3 -fbounds-check -fbacktrace -fPIC -fallow-argument-mismatch #-Wall -fcheck=array-temps,bounds,do,mem,pointer -std=legacy
  MODFLAG        =       -I
  LDFLAGS        =       
- CPP            =       /usr/bin/cpp
- CPPFLAGS       =       -P -traditional -D_GFORTRAN_
- LIBS           =       
- LIBJASPER      =       -ljpeg -L/home/nc153/soteria/software/miniconda3/envs/hrldas/lib -ljasper
- INCJASPER      =       -I/home/nc153/soteria/software/miniconda3/envs/hrldas/include
- NETCDFMOD      =       -I/stor/soteria/hydro/private/nc153/local/include
- NETCDFLIB      =       -L/stor/soteria/hydro/private/nc153/local/lib -lnetcdf -lnetcdff
- BZIP2          =       NO
- BZIP2_LIB      =       -lbz2 -L/home/nc153/soteria/software/miniconda3/envs/hrldas/lib
- BZIP2_INCLUDE  =       -I/home/nc153/soteria/software/miniconda3/envs/hrldas/include
+ CPP            =       /opt/apps/software/GCCcore/13.2.0/bin/cpp
+ CPPFLAGS       =       -P -traditional
+ LIBS           =       -fopenmp
+ LIBJASPER      =       -ljpeg -ljasper
+ INCJASPER      =       
+#NETCDFMOD      =       /home/ad202/.conda/envs/HB/include
+ NETCDFMOD      =       /opt/apps/software/netCDF/4.9.3-GCCcore-13.2.0/include
+ NETCDFLIB      =       -lnetcdf
+ BZIP2          =       YES
+ BZIP2_LIB      =       -lbz2 
+ BZIP2_INCLUDE  =       -I/opt/apps/software/bzip2/1.0.8-GCCcore-13.2.0/include
  RM             =       rm -f
- CC             =       /usr/bin/gcc
+ CC             =       /opt/apps/software/GCCcore/13.2.0/bin/cpp
 

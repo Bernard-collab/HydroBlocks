@@ -336,7 +336,7 @@ def update_solution_explicit(c_slope,c_n,u0,A0,topology,c_length,qss,bcs,dt_rout
  #Constrain velocity
  u0[u0 > maxu] = maxu
  u0[u0 < minu] = minu
- u0[:] = 2.0
+ #u0[:] = 2.0
 
  #Compute Q0in
  Q0in = Compute_Q0in(topology,u0,A0)

@@ -13,10 +13,19 @@ cd HydroBlocks
 **2. Create a conda environment named HB from the spec-file. Note that the only current spec-file in the repository is for a linux64 machine.** 
 
 ```
-conda create --name HB --file spec-file.txt
+conda create --name HB --file yml/nots_environment.txt
 source activate HB
-pip install git+https://github.com/chaneyn/geospatialtools@dev_nate
-pip install psutil==5.9.4
+pip install git+https://github.com/chaneyn/geospatialtools@dev_nate_2023
+pip install psutil
+```
+Alternatively install the packages directly from anaconda:
+
+```
+conda create --name HB
+source activate HB
+conda install -c conda-forge netcdf4 gdal geos jpeg scikit-learn numpy scipy h5py matplotlib cartopy mpi4py zarr opencv pandas numba xarray rioxarray fiona rasterio time
+pip install git+https://github.com/chaneyn/geospatialtools@dev_nate_2023
+pip install psutil
 ```
 
 **3. Install HydroBlocks.**

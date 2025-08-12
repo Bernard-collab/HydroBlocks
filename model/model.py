@@ -444,7 +444,7 @@ def determine_particle_tracker_mapping(MPdb,edir):
   for ucid in ucids:
    m = HBdb[cid].routing.downstream_channels[:,1,:] == ucid  
    channels = np.unique(HBdb[cid].routing.downstream_channels[:,0,:][m])
-   db[cid][ucid] = channels.data
+   db[cid][ucid] = channels.copy()
 
  #Send database to rank 0
  if rank != 0:

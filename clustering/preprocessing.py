@@ -24,7 +24,7 @@ import copy
 import collections
 import shapely.geometry
 import rasterio
-
+from rasterio.transform import from_bounds
 #dir = os.path.dirname(os.path.abspath(__file__))
 #sys.path.append('%s/../HydroBlocks/pyHWU/' % dir )
 #import management_funcs as mgmt_funcs
@@ -39,6 +39,7 @@ def plot_data(data):
  plt.savefig('tmp.png')
 
  return
+
 
 def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
 
@@ -61,6 +62,7 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  #Create soft link to HydroBlocks from within the directory
  HBdir = '%s/model/pyNoahMP' % (("/").join(__file__.split('/')[:-2]))
  HBedir = '%s/pyNoahMP%d' % (input_dir,hydroblocks_info['cid'])
+
  if os.path.exists(HBedir) == False:
   os.system('ln -s %s %s' % (HBdir,HBedir))
 
@@ -341,7 +343,7 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  m2[m2 > 0] = 1
  mall = np.copy(m2)
  mall[m2 <= 0] = 0
- mall = mall.astype(np.bool)
+ mall = mall.astype(bool)
  print("Calculating accumulated area",flush=True)
  #area = terrain_tools.ttf.calculate_d8_acc_pfdir(demns,m2,eares,fdir)
  area = area_all
@@ -573,14 +575,14 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
      lc_mask[covariates['lc_5']==1]=1 #mixed_forest
     if 'lc_6' in covariates:
      lc_mask[covariates['lc_6']==1]=0.66 #shrub/scrub
-#   lc_mask[covariates['lc_7']==1]=0.66 #dwarf/scrub, Alaska only
+   #lc_mask[covariates['lc_7']==1]=0.66 #dwarf/scrub, Alaska only
     if 'lc_11' in covariates:
      lc_mask[covariates['lc_11']==1]=0.66 #wetlands
     if 'lc_12' in covariates:
      lc_mask[covariates['lc_12']==1]=0.66 #pasture/hay/cultivated_crops
     if 'lc_10' in covariates:
      lc_mask[covariates['lc_10']==1]=0.33 #grassland
-#   lc_mask[covariates['lc_19']==1]=0.33 #moss/sedge/lichens, Alaska only
+   #lc_mask[covariates['lc_19']==1]=0.33 #moss/sedge/lichens, Alaska only
     if 'lc_16' in covariates:
      lc_mask[covariates['lc_16']==1]=0.01 #barren_land  
 
@@ -863,12 +865,12 @@ def Assign_Parameters_Semidistributed_svp(covariates,metadata,hydroblocks_info,O
   tmp = covariates['lc'][idx]
   tmp = tmp[tmp>=1]
   if len(tmp) >= 1 :
-   OUTPUT['parameters']['hru']['land_cover'][hru] = stats.mode(tmp)[0][0]
+   OUTPUT['parameters']['hru']['land_cover'][hru] = stats.mode(tmp, keepdims=True).mode.item()
   else:
    OUTPUT['parameters']['hru']['land_cover'][hru] = 17  # if there is no valid value, set to water #Noemi
 
   #Soil texture class constant in vertical laura svp
-  OUTPUT['parameters']['hru']['soil_texture_class'][hru] = stats.mode(covariates['TEXTURE_CLASS'][idx])[0][0]
+  OUTPUT['parameters']['hru']['soil_texture_class'][hru] = stats.mode(covariates['TEXTURE_CLASS'][idx], keepdims=True).mode.item()
 
   #Define the estimate for the model parameters
   OUTPUT['parameters']['hru']['m'][hru] = np.nanmean(covariates['dbedrock'][idx]) #0.1 #Form of the exponential decline in conductivity (0.01-1.0)
@@ -1045,7 +1047,7 @@ def Create_and_Curate_Covariates_svp(wbd,hydroblocks_info):
 
  # check if lc is a covariates, and disagregate it in classes
  if 'lc' in hydroblocks_info['hmc_parameters']['intraband_clustering_covariates']:
-  for lc in np.unique(covariates['lc'][covariates['mask'].astype(np.bool)]):
+  for lc in np.unique(covariates['lc'][covariates['mask'].astype(bool)]):
    if lc >= 0 :
     vnam = u'lc_%i' % lc
     masklc = (covariates['lc'] == lc)
@@ -1066,7 +1068,7 @@ def Create_and_Curate_Covariates_svp(wbd,hydroblocks_info):
  mask = np.copy(covariates['mask']).astype(np.int64)
  mask_all = np.copy(mask)
  mask[mask != hydroblocks_info['cid']] = 0
- mask = mask.astype(np.bool)
+ mask = mask.astype(bool)
  
  #Set all nans to the mean
  for var in covariates:
@@ -1080,7 +1082,7 @@ def Create_and_Curate_Covariates_svp(wbd,hydroblocks_info):
    #covariates[var][mask <= 0] = -9999.0
    mask1 = (np.isinf(covariates[var]) == 0) & (np.isnan(covariates[var]) == 0) 
    mask0 = (np.isinf(covariates[var]) == 1) | (np.isnan(covariates[var]) == 1)
-   covariates[var][mask0] = -9999.0# stats.mode(covariates[var][mask1])[0][0]
+   covariates[var][mask0] = -9999.0 # stats.mode(covariates[var][mask1], keepdims=True).mode.item()
 
  #Set everything that is -9999 to the mean
  for var in covariates:
@@ -1105,7 +1107,7 @@ def Create_and_Curate_Covariates_svp(wbd,hydroblocks_info):
      exit('Error_clustering: %s_full_of_nans %s' % (var,hydroblocks_info['cid']))
    if var not in ['mask',]:
     if var in ['nlcd','TEXTURE_CLASS','lc','irrig_land','bare30','water30','tree30','start_growing_season','end_growing_season']: 
-     covariates[var][covariates[var] == -9999.0] = stats.mode(covariates[var][covariates[var] != -9999.0])[0][0]
+     covariates[var][covariates[var] == -9999.0] = stats.mode(covariates[var][covariates[var] != -9999.0], keepdims=True).mode.item()
     else:
      covariates[var][covariates[var] == -9999.0] = np.mean(covariates[var][covariates[var] != -9999.0])
 
@@ -1245,12 +1247,13 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
   #Compute the mapping for each hru
   for hru in np.arange(hydroblocks_info['nhru']):
    idx = OUTPUT['hru_map'] == hru
-   icells = np.unique(mask_fine[idx][mask_fine[idx] != -9999.0].astype(np.int))   # Add != -9999 for unique and bicount - Noemi
-   counts = np.bincount(mask_fine[idx][mask_fine[idx] != -9999.0].astype(np.int))
+   icells = np.unique(mask_fine[idx][mask_fine[idx] != -9999.0].astype(np.int32))   # Add != -9999 for unique and bicount - Noemi
+   counts = np.bincount(mask_fine[idx][mask_fine[idx] != -9999.0].astype(np.int32))
    coords,pcts,dem_coarse = [],[],[] #dem for downscaling
    for icell in icells:
     ilat = int(np.floor(icell/mask_coarse.shape[1]))
     jlat = icell - ilat*mask_coarse.shape[1]
+
     pct = float(counts[icell])/float(np.sum(counts))
     coords.append([ilat,jlat])
     pcts.append(pct)
@@ -1298,7 +1301,8 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
  
  #Downscale the variables
  flag_downscale = False
- if flag_downscale == True:db_downscaled_data = Downscale_Meteorology(db_data,mapping_info)
+ if flag_downscale == True:
+  db_downscaled_data = Downscale_Meteorology(db_data,mapping_info)
 
  #Finalize data
  for var in db_data:
@@ -1470,8 +1474,8 @@ def Prepare_Water_Use_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydrob
   #Compute the mapping for each hru
   for hru in np.arange(hydroblocks_info['nhru']):
    idx = OUTPUT['hru_map'] == hru
-   icells = np.unique(mask_fine[idx][mask_fine[idx] != -9999.0].astype(np.int))   # Add != -9999 for unique and bicount - Noemi
-   counts = np.bincount(mask_fine[idx][mask_fine[idx] != -9999.0].astype(np.int))
+   icells = np.unique(mask_fine[idx][mask_fine[idx] != -9999.0].astype(np.int32))   # Add != -9999 for unique and bicount - Noemi
+   counts = np.bincount(mask_fine[idx][mask_fine[idx] != -9999.0].astype(np.int32))
    coords,pcts = [],[]
    for icell in icells:
     ilat = int(np.floor(icell/mask_coarse.shape[1]))
@@ -1594,7 +1598,9 @@ def driver(comm,metadata_file):
   #Prepare model data
   tic = time.time()
   Prepare_Model_Input_Data(metadata,metadata_file)
-  print("Elapsed time: ",time.time() - tic)
+  elapsed = time.time() - tic
+  elapsed_td = datetime.timedelta(seconds=elapsed)
+  print("Elapsed time:", str(elapsed_td))
  comm.Barrier()
 
  #Create enhanced input data file
@@ -1726,7 +1732,7 @@ def Connect_Cell_Networks_v2(rank,size,cids,edir):
      lats2 = db2[cid2]['channel_crds'][:,:,0]
      lons2 = db2[cid2]['channel_crds'][:,:,1]
      dist = ((lats2-lat1)**2 + (lons2-lon1)**2)**0.5
-     print('outlet',np.min(dist))
+     #print('outlet',np.min(dist))
      icd = np.where(dist == np.min(dist))[0][0]
      output_array[ic,3] = icd
         
@@ -1757,7 +1763,7 @@ def Connect_Cell_Networks_v2(rank,size,cids,edir):
     dist = ((lats2-lat1)**2 + (lons2-lon1)**2)**0.5
     icd = np.where(dist == np.min(dist))[0][0]
     inlet_array[ic,6+j] = icd 
-    print('inlet',inlet_array[ic,0],inlet_array[ic,1],inlet_array[ic,6+j],np.min(dist))
+    #print('inlet',inlet_array[ic,0],inlet_array[ic,1],inlet_array[ic,6+j],np.min(dist))
 
   #Add array to file
   fp['stream_network']['inlets'] = inlet_array[:]

@@ -1,26 +1,26 @@
 {
-  "rdir": "/stor/tyche/hydro/private/lpt14/projects/HBupdate2023/FD_test",
-  "experiment": "CMHB_ON_svp_ON",
+  "rdir": "/scratch/ad202/Exp_HB/HydroBlocks/experiments/test_exp",
+  "experiment": "MSWX_3h_Snow_Project",
   "startdate": {
-    "year": 2018,
+    "year": 2014,
     "month": 1,
     "day": 1
   },
   "enddate": {
-    "year": 2018,
-    "month": 3,
+    "year": 2024,
+    "month": 12,
     "day": 31
   },
-  "dt": 3600.0,
+  "dt": 10800.0,
   "channel_initiation": {
     "athrs": 1000000
   },
   "connection_matrix_hbands": true,
   "soil_vertical_properties": true,
   "hmc_parameters": {
-    "number_of_characteristic_subbasins": 5,
-    "average_height_difference_between_bands": 80,
-    "number_of_intraband_clusters": 5,
+    "number_of_characteristic_subbasins": 10,
+    "average_height_difference_between_bands": 50,
+    "number_of_intraband_clusters": 10,
     "subbasin_clustering_covariates": [
       "dem",
       "lats",
@@ -28,7 +28,10 @@
     ],
     "intraband_clustering_covariates": [
       "lc",
-      "clay"
+      "clay",
+      "dem",
+      "aspect",
+      "slope"
     ],
     "interridge_connectivity": false,
     "intervalley_connectivity": false,
@@ -106,9 +109,10 @@
     0.5
   ],
   "routing_module": {
-    "type": "kinematic",
+    "flag": false,
+    "type": "particle_tracker",
     "surface_coupling": true,
-    "dt_routing":100
+    "dt_routing":3600
   },
   "subsurface_module": "richards",
   "restart": {
@@ -117,14 +121,14 @@
   "output": {
     "vars": [
       "smc",
-      "trad",
-      "sh",
-      "lh",
-      "runoff",
-      "prcp",
-      "cm",
-      "emissi",
-      "salb"
+      "swe",
+      "snow_t",
+      "snowh",
+      "isnow",
+      "fsnow",
+      "qsnow"
+
+      
     ],
     "routing_vars": [
       "Q",
