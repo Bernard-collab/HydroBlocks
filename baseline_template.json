@@ -1,5 +1,5 @@
 {
-  "rdir": "/scratch/ad202/Exp_HB/HydroBlocks/experiments/test_exp",
+  "rdir": "/scratch/ad202/Exp_HB/HydroBlocks/experiments/snow_experiment",
   "experiment": "MSWX_3h_Snow_Project",
   "startdate": {
     "year": 2014,
@@ -9,7 +9,7 @@
   "enddate": {
     "year": 2024,
     "month": 12,
-    "day": 31
+    "day": 29
   },
   "dt": 10800.0,
   "channel_initiation": {
@@ -94,7 +94,7 @@
     "Tbot": 285.0
   },
   "segment": {
-    "years_per_segment": 1
+    "years_per_segment": 11
   },
   "dz": [
     0.05,
@@ -111,12 +111,12 @@
   "routing_module": {
     "flag": false,
     "type": "particle_tracker",
-    "surface_coupling": true,
+    "surface_coupling": false,
     "dt_routing":3600
   },
   "subsurface_module": "richards",
   "restart": {
-    "flag": false
+    "flag": true
   },
   "output": {
     "vars": [
@@ -125,7 +125,7 @@
       "snow_t",
       "snowh",
       "isnow",
-      "fsnow",
+      "fsno",
       "qsnow"
 
       

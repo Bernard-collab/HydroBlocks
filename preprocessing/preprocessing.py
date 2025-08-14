@@ -1664,6 +1664,89 @@ def Extract_Meteorology_Daily(cdb,workspace,metadata,icatch,log):
 
  return
 
+def Extract_Meteorology_MSWX_v1(workspace,metadata,log):
+ md = gdal_tools.retrieve_metadata('%s/mask_latlon.tif' % workspace)
+ cminlon, cminlat,cmaxlon, cmaxlat = md['minx'], md['miny'],md['maxx'],md['maxy']
+ startdate = datetime.datetime.strptime(metadata['meteo']['startdate'],'%d%b%Y')
+ enddate = datetime.datetime.strptime(metadata['meteo']['enddate'],'%d%b%Y')
+ start_day,end_day = startdate.strftime('%j'),enddate.strftime('%j')
+ vars = {'tair':"Temp",'spfh':"SpecHum",'psurf':"Pres",'wind':"Wind",'swdown':"SWd",'lwdown':"LWd",'precip':"P"}
+ mswx_vars = {'tair':"air_temperature",'spfh':"specific_humidity",'psurf':"surface_pressure",'wind':"wind_speed",'swdown':"downward_shortwave_radiation",'lwdown':"downward_longwave_radiation",'precip':"precipitation"}
+ 
+ keys_list = list(vars.keys())
+ shuffle(keys_list)
+ for var in keys_list:
+  print(f"MSWX variable {var} is processing!",flush=True)
+  k = True
+  folder = vars[var]
+  path = os.path.join(metadata["meteo"]["dir"],folder)
+  files = sorted(os.listdir(path))
+  ind_start,ind_end = files.index(f"{startdate.year}{start_day}.00.nc"),files.index(f"{enddate.year}{end_day}.21.nc")
+  filtered_files = files[ind_start:ind_end+1]
+  stacked_arr = []
+  for file in filtered_files:
+    nc_file = nc.Dataset(os.path.join(metadata["meteo"]["dir"],folder,file))
+    if k:
+      lon,lat = np.array(nc_file["lon"]),np.array(nc_file["lat"])
+      lob,lab = np.where(np.logical_and(lon <= cmaxlon, lon >=cminlon))[0],np.where(np.logical_and(lat <= cmaxlat, lat >= cminlat))[0]
+      lon, lat = lon[lob], lat[lab]
+      res = lat[0] - lat[1]
+      tstep = metadata['meteo']['tstep']
+      md = {'nlat':lat.shape[0],'nlon':lon.shape[0],'minlat':lat[-1],'minlon':lon[0],'maxlat':lat[0],'maxlon':lon[-1],'res':lat[0]-lat[1]}
+      md['undef'] = -9999.0
+      k = False
+    arr = np.array(nc_file[mswx_vars[var]][0,lab[0]: lab[-1] + 1, lob[0]: lob[-1] + 1]).astype(float)
+
+    fv = nc_file[mswx_vars[var]]._FillValue
+    arr[arr==fv] = np.nan
+    stacked_arr.append(arr)
+    nc_file.close()
+
+  data = np.stack(stacked_arr,axis=0)
+  if var == "precip":
+   data = data/ (3*3600)
+  elif var == "tair":
+   data = data + 273.15
+  ncfile = '%s/%s.nc' % (workspace,var)
+  md['file'],md['nt']=ncfile,data.shape[0]
+  md['tinitial'] = datetime.datetime(startdate.year,startdate.month,1,0)
+  md['tinitial_all'] = md['tinitial']
+  md['tstep'],   md['vars'] = tstep, [var]
+  fp = Create_NETCDF_File(md)
+  fp.variables[var][:] = data
+  fp.close()
+  del fp, data
+  gc.collect()
+  #Create a sample grid using the mask
+  mask_latlon_file = '%s/mask_latlon.tif' % (workspace)
+  file_coarse = '%s/%s_latlon_coarse.tif' % (workspace,var)
+  cache = int(psutil.virtual_memory().available*0.7/mb)
+  os.system('gdalwarp -tr %.16f %.16f -te %.16f %.16f %.16f %.16f --config GDAL_CACHEMAX %i %s %s >> %s 2>&1' % (res,res,lon[0]-res/2,lat[-1]-res/2,lon[-1]+res/2,lat[0]+res/2,cache,mask_latlon_file,file_coarse,log))
+
+  #Define the coarse and fine scale mapping
+  maskij = gdal_tools.read_raster(file_coarse)
+  metadata_maskij = gdal_tools.retrieve_metadata(file_coarse)
+  for i in np.arange(maskij.shape[0]):
+   maskij[i,:] = np.arange(i*maskij.shape[1],(i+1)*maskij.shape[1])
+  metadata_maskij['nodata'] = -9999.0
+  gdal_tools.write_raster(file_coarse,metadata_maskij,np.flipud(maskij))
+  del maskij
+  gc.collect()
+
+  #Get the parameters
+  md = gdal_tools.retrieve_metadata('%s/mask_latlon.tif' % workspace)
+  minx = md['minx']
+  miny = md['miny']
+  maxx = md['maxx']
+  maxy = md['maxy']
+  res = abs(md['resx'])
+  lproj = md['proj4']
+  
+  #Regrid and downscale
+  file_in = file_coarse
+  file_out = '%s/%s_latlon_fine.tif' % (workspace,var)
+  cache = int(psutil.virtual_memory().available*0.7/mb)
+  os.system('gdalwarp -t_srs \'%s\' -dstnodata -9999 -tr %.16f %.16f -te %.16f %.16f %.16f %.16f --config GDAL_CACHEMAX %i %s %s >> %s 2>&1' % (lproj,res,res,minx,miny,maxx,maxy,cache,file_in,file_out,log))
 
 
 
@@ -1914,7 +1997,8 @@ def prepare_input_data(cdir,cdb,metadata,rank,icatch):
   #Extract_Meteorology(cdb,workspace,metadata,icatch,log)
   Extract_Meteorology_Daily(cdb,workspace,metadata,icatch,log)
  elif metadata['meteo']['dataset'] == 'MSWX':
-  Extract_Meteorology_MSWX(cdb,workspace,metadata,icatch,log)
+  Extract_Meteorology_MSWX_v1(workspace,metadata,log)
+  #Extract_Meteorology_MSWX(cdb,workspace,metadata,icatch,log)
  else:
   raise ValueError("Unknown meteorological dataset specified in metadata. You must specify 'PCF' or 'MSWX'.")
 
@@ -2156,7 +2240,7 @@ def Create_Administrative_Boundaries(cdb,workspace,metadata,icatch,log):
  tmp_file = '%s/tmp.tif' % workspace
  
  #Rasterize the area
- buff = 0.1
+ buff = 0.25
  
  print(' buffer size:',buff,' icatch:',ci,flush=True) 
  minx = bbox['minlon']-buff

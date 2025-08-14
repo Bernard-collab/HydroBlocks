@@ -1,5 +1,5 @@
 {
-        "dir":"/scratch/ad202/Exp_HB/HydroBlocks/experiments/test_exp",
+        "dir":"/scratch/ad202/Exp_HB/HydroBlocks/experiments/snow_experiment",
         "domain_decomposition":{"type":"latlon",
                                 "boundaries":{"minlat":35.3,"maxlat":36.3,"minlon":-106.2,"maxlon":-105.2},
                                 "res":1,
