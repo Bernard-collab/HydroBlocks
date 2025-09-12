@@ -1,6 +1,7 @@
-{
-  "rdir": "/scratch/ad202/Exp_HB/HydroBlocks/experiments/snow_experiment",
-  "experiment": "MSWX_3h_Snow_Project",
+{ 
+  "rdir": "/scratch/alpine/battobrah@xsede.org/HydroBlocks/data/snow_experiment",
+  "forcing_dir": "/scratch/alpine/battobrah@xsede.org/HydroBlocks/data",
+  "experiment": "MSWX_3h_Snow_Project_Bernard",
   "startdate": {
     "year": 2014,
     "month": 1,
