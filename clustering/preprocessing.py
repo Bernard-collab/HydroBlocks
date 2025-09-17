@@ -338,6 +338,8 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  slope = np.flipud(slope)
  aspect = np.flipud(aspect)
 
+# Bernard: Compute sky view factor and terrain view factor
+
  #Compute accumulated area
  m2 = np.copy(mask_all)
  m2[m2 > 0] = 1
