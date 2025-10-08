@@ -223,6 +223,18 @@ class HydroBlocks:
   self.pct = self.input_fp.groups['parameters'].variables['area_pct'][:]/100
   self.pct = self.pct/np.sum(self.pct)
   self.metadata = info
+  #Bernard:Topographic radiation modifiers
+  params_grp = self.input_fp.groups['parameters'].variables
+  if 'svf' in params_grp:
+      self.svf = params_grp['svf'][:].astype(np.float64)
+  else:
+      self.svf = np.ones(self.nhru, dtype=np.float64)  # default
+
+  if 'tvf' in params_grp:
+      self.tvf = params_grp['tvf'][:].astype(np.float64)
+  else:
+      self.tvf = np.zeros(self.nhru, dtype=np.float64)  # default
+  
   #if (info['fully_distributed']==True) and (info['connection_matrix_hbands']==True): #laura
    #self.ncsbasins=info['hmc_parameters']['number_of_characteristic_subbasins_CID_%s'%info['cid']]#laura
   #elif (info['fully_distributed']==True) and (info['connection_matrix_hbands']==False): #laura

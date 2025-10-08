@@ -221,6 +221,20 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  metadata['nodata'] = -9999.0
  gdal_tools.write_raster(file_ca,metadata,channel_map)
 
+ #Write out SVF maps                            <<<<< Bernard Added
+ svf_map = np.copy(output['svf_grid'])
+ svf_map[np.isnan(svf_map) == 1] = -9999.0
+ file_svf = '%s/svf_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_svf, metadata, svf_map)
+ 
+ #Write out TVF maps                           <<<<<< Bernard Added
+ tvf_map = np.copy(output['tvf_grid'])
+ tvf_map[np.isnan(tvf_map) == 1] = -9999.0
+ file_tvf = '%s/tvf_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_tvf, metadata, tvf_map)
+
  #Write the connection matrices
  #width
  #laura's modification start
@@ -273,14 +287,14 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
         'BB','F11','SATPSI','SATDW','QTZ','clay',
         'WLTSMC','MAXSMC','DRYSMC','REFSMC','SATDK',
         'm','hand','y_aspect','x_aspect','hru','hband',
-        'lats','lons']
+        'lats','lons','svf','tvf']
 
  #if hydroblocks_info['water_management']['hwu_agric_flag']:
  # for var in ['centroid_lats', 'centroid_lons', 'irrig_land', 'start_growing_season', 'end_growing_season']:
  #   vars.append(var)
 
  for var in vars:
-  if var in ['slope','area_pct','land_cover','channel','dem','soil_texture_class','ti','carea','area','F11','clay','m','hand','y_aspect','x_aspect','hru','hband','lats','lons']: #laura svp
+  if var in ['slope','area_pct','land_cover','channel','dem','soil_texture_class','ti','carea','area','F11','clay','m','hand','y_aspect','x_aspect','hru','hband','lats','lons','svf','tvf']: #laura svp
    grp.createVariable(var,'f4',('hru',))#,zlib=True)
    grp.variables[var][:] = data['parameters']['hru'][var] #laura svp
   else: #laura svp
@@ -338,7 +352,44 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  slope = np.flipud(slope)
  aspect = np.flipud(aspect)
 
-# Bernard: Compute sky view factor and terrain view factor
+ ######### Bernard: Compute sky view factor (SVF) and terrain view factor (TVF) ############
+ from topocalc.viewf import viewf
+ print("Calculating Sky View Factor (SVF) and Terrain View Factor (TVF)", flush=True)
+
+ #Prepare DEM in double precision:Requirement for topocalc viewf (like slope/aspect step does)
+ dem64 = np.asarray(demns, dtype=np.float64)
+ dem64[dem64 <= -9990] = np.nan   # mask nodata
+
+ #Compute SVF and TVF
+ svf_grid, tvf_grid = viewf(dem64, float(eares), nangles=16)
+ #NOTE: use nangles=16 for speed/testing, 72 (5°) for production, 180 (2°) for fine resolution
+
+ #Mask invalid cells (same style as slope/aspect)
+ valid_mask = np.where(np.isfinite(demns) & (demns > -9990), 1, 0)
+ svf_grid = np.where(valid_mask == 1, svf_grid, -9999)
+ tvf_grid = np.where(valid_mask == 1, tvf_grid, -9999)
+
+ #Store in covariates dictionary
+ covariates["svf"] = svf_grid
+ covariates["tvf"] = tvf_grid
+
+ #Debut Print
+ print("SVF/TVF successfully added:", "svf" in covariates, "tvf" in covariates, flush=True)
+ print("SVF stats:", np.nanmin(svf_grid), np.nanmax(svf_grid), flush=True)
+ print("TVF stats:", np.nanmin(tvf_grid), np.nanmax(tvf_grid), flush=True)
+
+
+ #Debug plotting (optional, like slope/aspect was checked visually)
+ #def plot_data(data, fname="tmp.png"):
+    #import matplotlib.pyplot as plt
+    #plt.imshow(data, cmap="terrain")
+    #plt.colorbar()
+    #plt.savefig(fname, dpi=150)
+    #plt.close()
+
+ #plot_data(covariates["svf"], "svf.png")
+ #plot_data(covariates["tvf"], "tvf.png")
+ #plot_data(valid_mask, "valid_mask.png")  # check mask looks correct
 
  #Compute accumulated area
  m2 = np.copy(mask_all)
@@ -437,6 +488,8 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  # cleanup
  slope[mask != 1] = -9999
  aspect[mask != 1] = -9999
+ svf_grid[mask != 1] = -9999   ##Bernard added this
+ tvf_grid[mask != 1] = -9999   ##Bernard added this
  area[mask != 1] = -9999
  channels[mask != 1] = -9999
  basins[mask != 1] = -9999
@@ -449,6 +502,8 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  covariates['carea'] = area_all_cp#area
  covariates['carea_log10'] = np.log10(area_all_cp)#area
  covariates['hand'] = hand
+ covariates['svf'] = svf_grid       #Bernard: new covariate
+ covariates['tvf'] = tvf_grid       #Bernard: new covariate
 
  #Calculate the subbasin properties
  print("Assembling the subbasin properties",flush=True)
@@ -809,7 +864,8 @@ def Assign_Parameters_Semidistributed_svp(covariates,metadata,hydroblocks_info,O
  #Initialize the arrays
  vars = ['area','area_pct','F11','slope','dem','carea','channel',
          'land_cover','soil_texture_class','clay','sand','silt',
-         'm','hand','x_aspect','y_aspect','hru','hband','lats','lons'] #laura svp
+         'm','hand','x_aspect','y_aspect','hru','hband','lats','lons',
+         'svf','tvf'] #laura svp, Bernard added(tvf/svf)
 
  vars_s = ['BB','DRYSMC','MAXSMC','REFSMC','SATPSI','SATDK','SATDW','WLTSMC',                 'QTZ'] #laura svp
 
@@ -856,6 +912,9 @@ def Assign_Parameters_Semidistributed_svp(covariates,metadata,hydroblocks_info,O
   OUTPUT['parameters']['hru']['dem'][hru] = np.nanmean(covariates['dem'][idx])
   #HAND
   OUTPUT['parameters']['hru']['hand'][hru] = np.nanmean(covariates['hand'][idx])
+  #Average SVF and TVF (Bernard Added)
+  OUTPUT['parameters']['hru']['svf'][hru] = np.nanmean(covariates['svf'][idx]) #Bernard Added
+  OUTPUT['parameters']['hru']['tvf'][hru] = np.nanmean(covariates['tvf'][idx]) #Bernard Added
   #Average Catchment Area
   OUTPUT['parameters']['hru']['carea'][hru] = np.nanmean(covariates['carea'][idx])
   OUTPUT['parameters']['hru']['x_aspect'][hru] = np.nanmean(covariates['x_aspect'][idx])
@@ -1206,6 +1265,9 @@ def Create_Clusters_And_Connections(workspace,wbd,output,input_dir,nhru,info,hyd
  OUTPUT['basin_clusters_map'] = basin_clusters
  OUTPUT['hand_org_map'] = hand_org
  OUTPUT['hband_map'] = hbands
+ ##Add Bernard: export SVF/TVF full grids for writing to GeoTIFF later
+ OUTPUT['svf_grid'] = covariates['svf']
+ OUTPUT['tvf_grid'] = covariates['tvf']
 
  #Assign the model parameters
  print("Assigning the model parameters",flush=True)
