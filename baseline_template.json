@@ -131,8 +131,15 @@
       "snowh",
       "isnow",
       "fsno",
-      "qsnow"
-
+      "qsnow",
+      "sh",
+      "lh",
+      "trad",
+      "lwnet",
+      "swnet",
+      "cosz",
+      "salb",
+      "emissi"
       
     ],
     "routing_vars": [
