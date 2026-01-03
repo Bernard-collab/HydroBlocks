@@ -311,11 +311,11 @@ class HydroBlocks:
           'lfmass','rtmass','stmass','wood','stblcp','fastcp','tauss','t2mv','t2mb','q2mv',\
           'q2mb','trad','nee','gpp','npp','fvegmp','runsf','runsb','ecan','etran','esoil','fsa','fira',\
           'apar','psn','sav','sag','rssun','rssha','bgap','wgap','tgv','tgb','chv','chb','irc','irg','shc',\
-          'shg','evg','ghv','irb','shb','evb','ghb','tr','evc','chleaf','chuc','chv2','chb2','cosz','lat',\
+          'shg','evg','ghv','irb','shb','evb','ghb','tr','evc','chleaf','chuc','chv2','chb2','cosz','azimuth','lat',\
           'lon','fveg','fvgmax','fpice','fcev','fgev','fctr','qsnbot',\
           'foln','smcmax','smcdry','smcref','errwat','zwt0','minzwt',\
           'mozb','fvb','mozv','fvv','zpd','zpdg','tauxb','tauyb','tauxv','tauyv','sfcheadrt',\
-          'snow','snowh','canwat','xlat','xlon','tsk','tmn','xice','sai','lai','grain',\
+          'snow','snowh','canwat','xlat','xlon','tsk','tmn','xice','sai','lai','grain','xsvf', 'xtvf', 'xslope', 'xaspect','xsdelev', \
           'gdd','chstar','area','msftx','msfty','qrfs','qsprings','qslat','fdepth',\
           'ht','riverbed','eqzwt','rivercond','pexp','rechclim',\
           'planting','harvest','season_gdd',\
@@ -468,11 +468,11 @@ class HydroBlocks:
   #self.noahmp.xlat[:] = self.input_fp.groups['metadata'].latitude
   self.noahmp.xlon[:] = self.input_fp.groups['parameters'].variables['lons'][:]
   #self.noahmp.xlon[:] = self.input_fp.groups['metadata'].longitude
-  self.noahmp.svf[:] = self.input_fp.groups['parameters'].variables['svf'][:]
-  self.noahmp.tvf[:] = self.input_fp.groups['parameters'].variables['tvf'][:]
-  self.noahmp.slope[:] = self.input_fp.groups['parameters'].variables['slope'][:]
-  self.noahmp.aspect[:] = self.input_fp.groups['parameters'].variables['aspect'][:]
-  self.noahmp.sdeev[:] = self.input_fp.groups['parameters'].variables['sdelev'][:]
+  self.noahmp.xsvf[:] = self.input_fp.groups['parameters'].variables['svf'][:]
+  self.noahmp.xtvf[:] = self.input_fp.groups['parameters'].variables['tvf'][:]
+  self.noahmp.xslope[:] = self.input_fp.groups['parameters'].variables['slope'][:]
+  self.noahmp.xaspect[:] = self.input_fp.groups['parameters'].variables['aspect'][:]
+  self.noahmp.xsdelev[:] = self.input_fp.groups['parameters'].variables['sdelev'][:]
   self.noahmp.wtddt = 30.0
   self.noahmp.stepwtd = np.max([np.round(self.noahmp.wtddt*60.0/self.noahmp.dt),1])
   self.noahmp.runsf[:] = 0.0
@@ -559,7 +559,7 @@ class HydroBlocks:
   #Define the parameters
   noah = self.noahmp
   self.noahmp.initialize(noah.llanduse,noah.snow,noah.snowh,noah.canwat,\
-          noah.isltyp,noah.ivgtyp,noah.xlat,noah.svf,noah.tvf,noah.slope,noah.aspect,noah.sdelev,noah.tslb,noah.smois,noah.sh2o,noah.dzs,\
+          noah.isltyp,noah.ivgtyp,noah.xlat,noah.xsvf,noah.xtvf,noah.xslope,noah.xaspect,noah.xsdelev,noah.tslb,noah.smois,noah.sh2o,noah.dzs,\
           noah.fndsoilw,noah.fndsnowh,noah.tsk,noah.isnow,noah.tv,noah.tg,noah.canice,\
           noah.tmn,noah.xice,noah.canliq,noah.eah,noah.tah,noah.cm,noah.ch,\
           noah.fwet,noah.sneqvo,noah.albold,noah.qsnow,noah.wslake,noah.zwt,noah.wa,\
@@ -935,7 +935,7 @@ class HydroBlocks:
   # Update NOAH
   n = self.noahmp
   n.update(n.z_ml,n.dt,n.lwdn,n.swdn,n.u_ml,n.v_ml,n.q_ml,n.t_ml,n.prcp,n.psfc,\
-           n.nowdate,n.xlat,n.xlon,n.cosz,n.azimuth, n.svf, n.tvf, n.slope, n.aspect, n.sdelev, n.julian,\
+           n.nowdate,n.xlat,n.xlon,n.cosz,n.azimuth, n.xsvf, n.xtvf, n.xslope, n.xaspect, n.xsdelev, n.julian,\
            n.itime,n.year,\
            n.dzs,n.dx,\
            n.ivgtyp,n.isltyp,n.fvegmp,n.fvgmax,n.tmn,\
@@ -1250,6 +1250,7 @@ class HydroBlocks:
   tmp['apar'] = np.copy(NOAH.apar) #
   tmp['emissi'] = np.copy(NOAH.emiss) 
   tmp['cosz'] = np.copy(NOAH.cosz) 
+  tmp['azimuth'] = np.copy(NOAH.azimuth) 
   tmp['zwt'] = np.copy(NOAH.zwt) #m
   tmp['swe'] = np.copy(NOAH.snow) #m
   tmp['totsmc'] = np.sum(NOAH.sldpth*NOAH.smois,axis=1)/np.sum(NOAH.sldpth[0]) #m3/m3
@@ -1463,7 +1464,8 @@ class HydroBlocks:
              'psn':{'description':'Total photosynthesis','units':'umol/m2/s','dims':('time','hru',),'precision':4},
              'apar':{'description':'Photosynthesis active energy by canopy','units':'W/m2','dims':('time','hru',),'precision':4},
              'emissi':{'description':'Land surface albedo','units':' ','dims':('time','hru',),'precision':4},
-             'cosz':{'description':'Land surface albedo','units':' ','dims':('time','hru',),'precision':4},
+             'cosz':{'description':'Cosine of solar zenith angle','units':' ','dims':('time','hru',),'precision':4},
+             'azimuth':{'description':'Solar azimuth angle','units':' ','dims':('time','hru',),'precision':4},
              'qbase':{'description':'Excess runoff','units':'mm/s','dims':('time','hru',),'precision':4},
              'udrunoff':{'description':'Accumulated baseflow','units':'mm','dims':('time','hru',),'precision':4},
              'sfcrunoff':{'description':'Accumulated surface','units':'mm','dims':('time','hru',),'precision':4},

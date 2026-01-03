@@ -25,7 +25,9 @@ import collections
 import shapely.geometry
 import rasterio
 from rasterio.transform import from_bounds
-import topocalc
+# import topocalc
+from topocalc.viewf import viewf
+from topocalc.gradient import gradient_d8
 #dir = os.path.dirname(os.path.abspath(__file__))
 #sys.path.append('%s/../HydroBlocks/pyHWU/' % dir )
 #import management_funcs as mgmt_funcs
@@ -274,7 +276,7 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
         'BB','F11','SATPSI','SATDW','QTZ','clay',
         'WLTSMC','MAXSMC','DRYSMC','REFSMC','SATDK',
         'm','hand','y_aspect','x_aspect','hru','hband',
-        'svf', 'tcf', 'aspect', 'sdelev',
+        'svf', 'tvf', 'aspect', 'sdelev',
         'lats','lons']
 
  #if hydroblocks_info['water_management']['hwu_agric_flag']:
@@ -282,7 +284,7 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  #   vars.append(var)
 
  for var in vars:
-  if var in ['slope','area_pct','land_cover','channel','dem','soil_texture_class','ti','carea','area','F11','clay','m','hand','y_aspect','x_aspect','svf','tcf','aspect','sdelev','hru','hband','lats','lons']: #laura svp
+  if var in ['slope','area_pct','land_cover','channel','dem','soil_texture_class','ti','carea','area','F11','clay','m','hand','y_aspect','x_aspect','svf','tvf','aspect','sdelev','hru','hband','lats','lons']: #laura svp
    grp.createVariable(var,'f4',('hru',))#,zlib=True)
    grp.variables[var][:] = data['parameters']['hru'][var] #laura svp
   else: #laura svp
@@ -342,10 +344,21 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
 
  # ezdev: compute sky view factor and terrain view factor
  # grid cell spacing for the DEM
-# dem_spacing = 30
-# slope2, aspect2 = topocalc.gradient_d8(dem, eares, eares)
-svf, tvf = topocalc.viewf(demns, spacing=eares, nangles = 16) # default nangles is 72
-sdelev = np.sqrt(slope**2) # use a different local roughness metric
+ # dem_spacing = 30
+ slope2, aspect2 = gradient_d8(demns, eares, eares)
+ # print(demns)
+ print(np.mean(demns))
+ print(np.max(demns))
+ print(np.min(demns))
+ print(np.shape(demns))
+ print( "eares size = ", np.shape(eares))
+ print( "eares size = ", eares)
+ print( np.sum(np.isnan(demns)))
+ # svf, tvf = viewf(demns, spacing=eares, nangles = 16) # default nangles is 72
+ svf = slope2
+ tvf = aspect2
+ # svf, tvf = viewf(np.random.rand(np.shape(demns)[0], np.shape(demns)[1]), spacing=30, nangles = 16) # default nangles is 72
+ sdelev = np.sqrt(slope**2) # placeholder - use this variable to compute some local roughness metric
 
  #Compute accumulated area
  m2 = np.copy(mask_all)
@@ -822,7 +835,7 @@ def Assign_Parameters_Semidistributed_svp(covariates,metadata,hydroblocks_info,O
  #Initialize the arrays
  vars = ['area','area_pct','F11','slope','dem','carea','channel',
          'land_cover','soil_texture_class','clay','sand','silt',
-         'm','hand','x_aspect','y_aspect','hru','hband','lats','lons'] #laura svp
+         'm','hand','x_aspect','y_aspect','hru','hband','lats','lons','svf', 'tvf', 'aspect', 'sdelev'] #laura svp
 
  vars_s = ['BB','DRYSMC','MAXSMC','REFSMC','SATPSI','SATDK','SATDW','WLTSMC',                 'QTZ'] #laura svp
 

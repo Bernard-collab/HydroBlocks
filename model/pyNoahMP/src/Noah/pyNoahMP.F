@@ -1,4 +1,4 @@
-subroutine initialize(MMINLU,SNOW,SNOWH,CANWAT,ISLTYP,IVGTYP,XLAT, XTVF, XSVF, XSLOPE, XASPECT, XSDELEV, &
+subroutine initialize(MMINLU,SNOW,SNOWH,CANWAT,ISLTYP,IVGTYP,XLAT, XSVF, XTVF, XSLOPE, XASPECT, XSDELEV, &
        TSLB,SMOIS,SH2O,DZS,FNDSOILW,FNDSNOWH,&
        TSK,isnowxy,tvxy,tgxy,canicexy,TMN,XICE,&
        canliqxy ,eahxy    ,tahxy    ,cmxy     ,chxy     ,                     &
@@ -407,11 +407,11 @@ print*,'CANWAT ',CANWAT
 print*,'ISLTYP ',ISLTYP
 print*,'IVGTYP ',IVGTYP
 print*,'XLAT ',XLAT
-print*,'XSDELEV ',XSDELEV
 print*,'XSVF ',XSVF
 print*,'XTVF ',XTVF
 print*,'XSLOPE ',XSLOPE
 print*,'XASPECT ',XASPECT
+print*,'SDELEV', SDELEV
 print*,'TSLB ',TSLB
 print*,'SMOIS ',SMOIS
 print*,'SH2O ',SH2O
