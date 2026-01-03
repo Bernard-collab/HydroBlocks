@@ -776,7 +776,7 @@ contains
 
     CALL ENERGY (parameters,ICE    ,VEGTYP ,IST    ,NSNOW  ,NSOIL  , & !in
                  ISNOW  ,DT     ,RHOAIR ,SFCPRS ,QAIR   , & !in
-                 SFCTMP ,THAIR  ,LWDN   ,UU     ,VV     ,ZLVL   , & !in
+                 SFCTMP ,THAIR  ,LWDN_3D   ,UU     ,VV     ,ZLVL   , & !in
                  CO2AIR ,O2AIR  ,SOLAD  ,SOLAI  ,COSZ   ,IGS    , & !in
                  EAIR   ,TBOT   ,ZSNSO  ,ZSOIL  , & !in
                  ELAI   ,ESAI   ,FWET   ,FOLN   ,         & !in
