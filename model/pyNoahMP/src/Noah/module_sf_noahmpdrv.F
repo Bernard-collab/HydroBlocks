@@ -9,7 +9,7 @@ MODULE module_sf_noahmpdrv
 !
 CONTAINS
 !
-  SUBROUTINE noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH,XLAT,XLONG, & ! IN : Time/Space-related
+  SUBROUTINE noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH, TVF, SVF, SLOPE, ASPECT, SDELEV,XLAT,XLONG, & ! IN : Time/Space-related
                   DZ8W,       DT,       DZS,    NSOIL,       DX,            & ! IN : Model configuration 
 	        IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN,            & ! IN : Vegetation/Soil characteristics
 		 XLAND,     XICE,XICE_THRES,  CROPCAT,                      & ! IN : Vegetation/Soil characteristics
@@ -73,6 +73,11 @@ CONTAINS
     REAL,                                            INTENT(IN   ) ::  JULIAN    ! Julian day
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  COSZIN    ! cosine zenith angle
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  AZIMUTH   ! solar azimuth angle
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  TVF ! terrain view factor[-]
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  SVF ! sky view factor [-]
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  SLOPE ! topo slope [-]
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  ASPECT ! topo aspect [-]
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  SDELEV ! elevation standard deviation [m]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XLAT      ! latitude [rad]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XLONG     ! latitude [rad]
     REAL,    DIMENSION( ims:ime, kms:kme, jms:jme ), INTENT(IN   ) ::  DZ8W      ! thickness of atmo layers [m]
@@ -874,7 +879,7 @@ CONTAINS
     ELSE
          ICE=0                              ! Neither sea ice or land ice.
          CALL NOAHMP_SFLX (parameters, &
-            I       , J       , LAT     , YEARLEN , JULIAN  , COSZ,   AZIM , & ! IN : Time/Space-related
+            I       , J       , LAT     , YEARLEN , JULIAN  , COSZ,   AZIM , TVF, SVF, SLOPE, ASPECT, SDELEV,& ! IN : Time/Space-related
             DT      , DX      , DZ8W1D  , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
             FVEG    , FVGMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
             SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics

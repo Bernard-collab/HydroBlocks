@@ -468,6 +468,11 @@ class HydroBlocks:
   #self.noahmp.xlat[:] = self.input_fp.groups['metadata'].latitude
   self.noahmp.xlon[:] = self.input_fp.groups['parameters'].variables['lons'][:]
   #self.noahmp.xlon[:] = self.input_fp.groups['metadata'].longitude
+  self.noahmp.svf[:] = self.input_fp.groups['parameters'].variables['svf'][:]
+  self.noahmp.tvf[:] = self.input_fp.groups['parameters'].variables['tvf'][:]
+  self.noahmp.slope[:] = self.input_fp.groups['parameters'].variables['slope'][:]
+  self.noahmp.aspect[:] = self.input_fp.groups['parameters'].variables['aspect'][:]
+  self.noahmp.sdeev[:] = self.input_fp.groups['parameters'].variables['sdelev'][:]
   self.noahmp.wtddt = 30.0
   self.noahmp.stepwtd = np.max([np.round(self.noahmp.wtddt*60.0/self.noahmp.dt),1])
   self.noahmp.runsf[:] = 0.0
@@ -554,7 +559,7 @@ class HydroBlocks:
   #Define the parameters
   noah = self.noahmp
   self.noahmp.initialize(noah.llanduse,noah.snow,noah.snowh,noah.canwat,\
-          noah.isltyp,noah.ivgtyp,noah.xlat,noah.tslb,noah.smois,noah.sh2o,noah.dzs,\
+          noah.isltyp,noah.ivgtyp,noah.xlat,noah.svf,noah.tvf,noah.slope,noah.aspect,noah.sdelev,noah.tslb,noah.smois,noah.sh2o,noah.dzs,\
           noah.fndsoilw,noah.fndsnowh,noah.tsk,noah.isnow,noah.tv,noah.tg,noah.canice,\
           noah.tmn,noah.xice,noah.canliq,noah.eah,noah.tah,noah.cm,noah.ch,\
           noah.fwet,noah.sneqvo,noah.albold,noah.qsnow,noah.wslake,noah.zwt,noah.wa,\
@@ -930,7 +935,7 @@ class HydroBlocks:
   # Update NOAH
   n = self.noahmp
   n.update(n.z_ml,n.dt,n.lwdn,n.swdn,n.u_ml,n.v_ml,n.q_ml,n.t_ml,n.prcp,n.psfc,\
-           n.nowdate,n.xlat,n.xlon,n.cosz,n.julian,\
+           n.nowdate,n.xlat,n.xlon,n.cosz,n.tvf, n.svf, n.slope, n.aspect, n.sdelev, n.julian,\
            n.itime,n.year,\
            n.dzs,n.dx,\
            n.ivgtyp,n.isltyp,n.fvegmp,n.fvgmax,n.tmn,\

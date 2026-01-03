@@ -274,7 +274,7 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
         'BB','F11','SATPSI','SATDW','QTZ','clay',
         'WLTSMC','MAXSMC','DRYSMC','REFSMC','SATDK',
         'm','hand','y_aspect','x_aspect','hru','hband',
-        'svf', 'tcf',
+        'svf', 'tcf', 'aspect', 'sdelev',
         'lats','lons']
 
  #if hydroblocks_info['water_management']['hwu_agric_flag']:
@@ -282,7 +282,7 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  #   vars.append(var)
 
  for var in vars:
-  if var in ['slope','area_pct','land_cover','channel','dem','soil_texture_class','ti','carea','area','F11','clay','m','hand','y_aspect','x_aspect','svf','tcf','hru','hband','lats','lons']: #laura svp
+  if var in ['slope','area_pct','land_cover','channel','dem','soil_texture_class','ti','carea','area','F11','clay','m','hand','y_aspect','x_aspect','svf','tcf','aspect','sdelev','hru','hband','lats','lons']: #laura svp
    grp.createVariable(var,'f4',('hru',))#,zlib=True)
    grp.variables[var][:] = data['parameters']['hru'][var] #laura svp
   else: #laura svp
@@ -343,7 +343,9 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  # ezdev: compute sky view factor and terrain view factor
  # grid cell spacing for the DEM
 # dem_spacing = 30
-svf, tvf = viewf(demns, spacing=eares, nangles = 16) # default nangles is 72
+# slope2, aspect2 = topocalc.gradient_d8(dem, eares, eares)
+svf, tvf = topocalc.viewf(demns, spacing=eares, nangles = 16) # default nangles is 72
+sdelev = np.sqrt(slope**2) # use a different local roughness metric
 
  #Compute accumulated area
  m2 = np.copy(mask_all)
@@ -447,12 +449,14 @@ svf, tvf = viewf(demns, spacing=eares, nangles = 16) # default nangles is 72
  basins[mask != 1] = -9999
  svf[mask != 1] = -9999 # ezdev
  tvf[mask != 1] = -9999 # ezdev
+ sdelev[mask != 1] = -9999 # ezdev
 
  # save covariates
  covariates['slope'] = slope
  covariates['aspect'] = aspect
  covariates['svf'] = svf
- covariates['tvf'] = tvf
+ covariates['tvf'] = tvf 
+ covariates['sdelev'] = sdelev
  covariates['x_aspect'] = np.sin(aspect)
  covariates['y_aspect'] = np.cos(aspect)
  covariates['carea'] = area_all_cp#area
@@ -871,6 +875,8 @@ def Assign_Parameters_Semidistributed_svp(covariates,metadata,hydroblocks_info,O
   OUTPUT['parameters']['hru']['y_aspect'][hru] = np.nanmean(covariates['y_aspect'][idx])
   OUTPUT['parameters']['hru']['svf'][hru] = np.nanmean(covariates['svf'][idx])
   OUTPUT['parameters']['hru']['tvf'][hru] = np.nanmean(covariates['tvf'][idx])
+  OUTPUT['parameters']['hru']['sdelev'][hru] = np.nanmean(covariates['sdelev'][idx])
+  OUTPUT['parameters']['hru']['aspect'][hru] = np.nanmean(covariates['aspect'][idx])
   #Average geographic coordinates
   OUTPUT['parameters']['hru']['lats'][hru] = np.nanmean(covariates['lats'][idx])
   OUTPUT['parameters']['hru']['lons'][hru] = np.nanmean(covariates['lons'][idx])

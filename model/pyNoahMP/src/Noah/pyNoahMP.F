@@ -1,4 +1,4 @@
-subroutine initialize(MMINLU,SNOW,SNOWH,CANWAT,ISLTYP,IVGTYP,XLAT, &
+subroutine initialize(MMINLU,SNOW,SNOWH,CANWAT,ISLTYP,IVGTYP,XLAT, SVF, TVF, SLOPE, ASPECT, SDELEV, &
        TSLB,SMOIS,SH2O,DZS,FNDSOILW,FNDSNOWH,&
        TSK,isnowxy,tvxy,tgxy,canicexy,TMN,XICE,&
        canliqxy ,eahxy    ,tahxy    ,cmxy     ,chxy     ,                     &
@@ -55,6 +55,11 @@ subroutine initialize(MMINLU,SNOW,SNOWH,CANWAT,ISLTYP,IVGTYP,XLAT, &
 
     character(len=*), intent(in) :: MMINLU
     REAL, DIMENSION(nhru), INTENT(INOUT) :: XLAT         !latitude
+    REAL, DIMENSION(nhru), INTENT(INOUT) :: SLOPE         !
+    REAL, DIMENSION(nhru), INTENT(INOUT) :: ASPECT         !
+    REAL, DIMENSION(nhru), INTENT(INOUT) :: SVF         !       
+    REAL, DIMENSION(nhru), INTENT(INOUT) :: TVF         !
+    REAL, DIMENSION(nhru), INTENT(INOUT) :: SDELEV       !
     REAL, DIMENSION(nhru), INTENT(INOUT) :: TSK         !skin temperature (k)
     REAL, DIMENSION(nhru), INTENT(INOUT) :: TMN         !deep soil temperature (k)
     REAL, DIMENSION(nhru), INTENT(INOUT) :: XICE         !sea ice fraction
@@ -402,6 +407,11 @@ print*,'CANWAT ',CANWAT
 print*,'ISLTYP ',ISLTYP
 print*,'IVGTYP ',IVGTYP
 print*,'XLAT ',XLAT
+print*,'SDELEV ',SDELEV
+print*,'SVF ',SVF
+print*,'TVF ',TVF
+print*,'SLOPE ',SLOPE
+print*,'ASPECT ',ASPECT
 print*,'TSLB ',TSLB
 print*,'SMOIS ',SMOIS
 print*,'SH2O ',SH2O
