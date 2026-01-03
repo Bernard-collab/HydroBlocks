@@ -133,6 +133,11 @@ MODULE MODULE_SF_NOAHMPLSM
                       !   2 -> two-stream applied to grid-cell (gap = 0)
                       ! **3 -> two-stream applied to vegetated fraction (gap=1-FVEG)
 
+  INTEGER :: OPT_3DRAD  ! options for 3D radiation transfer over mountains
+                      !   1 -> No 3D radiative effects (plane parallel)
+                      ! **2 -> Default 3D radiation scheme
+                      !   3 -> Tentative new 3D radiation scheme
+
   INTEGER :: OPT_ALB  ! options for ground snow surface albedo
                       !   1 -> BATS
 		      ! **2 -> CLASS
@@ -9146,7 +9151,7 @@ END SUBROUTINE EMERG
 !== begin noahmp_options ===========================================================================
 
   subroutine noahmp_options(idveg     ,iopt_crs  ,iopt_btr  ,iopt_run  ,iopt_sfc  ,iopt_frz , & 
-                             iopt_inf  ,iopt_rad  ,iopt_alb  ,iopt_snf  ,iopt_tbot, iopt_stc, &
+                             iopt_inf  ,iopt_rad  ,iopt_3drad, iopt_alb  ,iopt_snf  ,iopt_tbot, iopt_stc, &
 			     iopt_rsf , iopt_soil, iopt_pedo, iopt_crop )
 
   implicit none
@@ -9159,6 +9164,7 @@ END SUBROUTINE EMERG
   INTEGER,  INTENT(IN) :: iopt_frz  !supercooled liquid water (1-> NY06; 2->Koren99)
   INTEGER,  INTENT(IN) :: iopt_inf  !frozen soil permeability (1-> NY06; 2->Koren99)
   INTEGER,  INTENT(IN) :: iopt_rad  !radiation transfer (1->gap=F(3D,cosz); 2->gap=0; 3->gap=1-Fveg)
+  INTEGER,  INTENT(IN) :: iopt_3drad  ! 3D radiation transfer over mountains (1->plane parallel; 2->3D rad default scheme; 3->other option TBD)
   INTEGER,  INTENT(IN) :: iopt_alb  !snow surface albedo (1->BATS; 2->CLASS)
   INTEGER,  INTENT(IN) :: iopt_snf  !rainfall & snowfall (1-Jordan91; 2->BATS; 3->Noah)
   INTEGER,  INTENT(IN) :: iopt_tbot !lower boundary of soil temperature (1->zero-flux; 2->Noah)
@@ -9180,7 +9186,8 @@ END SUBROUTINE EMERG
   opt_sfc  = iopt_sfc  
   opt_frz  = iopt_frz  
   opt_inf  = iopt_inf  
-  opt_rad  = iopt_rad  
+  opt_rad  = iopt_rad
+  opt_3drad  = iopt_3drad  
   opt_alb  = iopt_alb  
   opt_snf  = iopt_snf  
   opt_tbot = iopt_tbot 

@@ -500,6 +500,7 @@ class HydroBlocks:
   self.noahmp.iopt_frz = self.metadata['noahmp_options']['iopt_frz'] # supercooled liquid water (1-> NY06; 2->Koren99)
   self.noahmp.iopt_inf = self.metadata['noahmp_options']['iopt_inf'] # frozen soil permeability (1-> NY06; 2->Koren99)
   self.noahmp.iopt_rad = self.metadata['noahmp_options']['iopt_rad'] # radiation transfer (1->gap=F(3D,cosz); 2->gap=0; 3->gap=1-Fveg)
+  self.noahmp.iopt_3drad = self.metadata['noahmp_options']['iopt_3drad'] # 3D radiation transfer over mountains (1->plane parallel; 2->default 3D scheme; 3->new 3D scheme)
   self.noahmp.iopt_alb = self.metadata['noahmp_options']['iopt_alb'] # snow surface albedo (1->BATS; 2->CLASS)
   self.noahmp.iopt_snf = self.metadata['noahmp_options']['iopt_snf'] # rainfall & snowfall (1-Jordan91; 2->BATS; 3->Noah)]
   self.noahmp.iopt_tbot = self.metadata['noahmp_options']['iopt_tbot'] # lower boundary of soil temperature (1->zero-flux; 2->Noah) 
@@ -936,7 +937,7 @@ class HydroBlocks:
            n.cropcat,\
            n.planting,n.harvest,n.season_gdd,\
            n.idveg,n.iopt_crs,n.iopt_btr,n.iopt_run,n.iopt_sfc,n.iopt_frz,\
-           n.iopt_inf,n.iopt_rad,n.iopt_alb,n.iopt_snf,n.iopt_tbot,n.iopt_stc,\
+           n.iopt_inf,n.iopt_rad, n.iopt_3drad, n.iopt_alb,n.iopt_snf,n.iopt_tbot,n.iopt_stc,\
            n.iopt_gla,n.iopt_rsf,n.iopt_crop,\
            n.iz0tlnd,n.sf_urban_physics,\
            n.tsk,n.hfx,n.qfx,n.lh,n.grdflx,n.smstav,\
