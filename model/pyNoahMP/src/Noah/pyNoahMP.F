@@ -411,7 +411,7 @@ print*,'XSVF ',XSVF
 print*,'XTVF ',XTVF
 print*,'XSLOPE ',XSLOPE
 print*,'XASPECT ',XASPECT
-print*,'SDELEV', SDELEV
+print*,'SDELEV', XSDELEV
 print*,'TSLB ',TSLB
 print*,'SMOIS ',SMOIS
 print*,'SH2O ',SH2O

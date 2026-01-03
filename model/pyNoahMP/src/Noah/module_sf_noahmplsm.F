@@ -977,18 +977,18 @@ contains
 
 
        ! ------------ EZDEV TODO: compute 3DRAD radiation correction here
-     IF(OPT_SNF == 1) THEN
-      write* 'USING PP RAD - OPTION 1'
+     IF(OPT_3DRAD == 1) THEN
+      write(*,*) 'USING PP RAD - OPTION 1'
         ! do nothing - plane parallel radiation
-     ELSE IF(OPT_SNF == 2) THEN
+     ELSE IF(OPT_3DRAD == 2) THEN
         ! standard 3D radiation correction
-        write* 'USING 3D RAD - OPTION 2'
+        write(*,*) 'USING 3D RAD - OPTION 2'
         SOLAI(1) = 0.75 * SOLAI(1) * ALBOLD / (ALBOLD + 0.01)
         SOLAI(2) = 0.75 * SOLAI(2) * SVF
         SOLAD(1) = 0.75 * SOLAD(1)
         SOLAD(2) = 0.75 * SOLAD(2)
-     ELSE IF(OPT_SNF == 2) THEN
-      write* "USING 3D RAD - OPTION 3"
+     ELSE IF(OPT_3DRAD == 2) THEN
+      write(*,*) 'USING 3D RAD - OPTION 3'
       ! new 3D radiation correction
       SOLAI(1) = 1.25 * SOLAI(1) * ALBOLD / (ALBOLD + 0.01)
       SOLAI(2) = 1.25 * SOLAI(2) * SVF
