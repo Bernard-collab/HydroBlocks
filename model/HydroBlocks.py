@@ -310,7 +310,7 @@ class HydroBlocks:
           'fwet','sneqvo','albold','qsnow','wslake','zwt','dzwt','wa','wt','smcwtd','deeprech','rech',\
           'lfmass','rtmass','stmass','wood','stblcp','fastcp','tauss','t2mv','t2mb','q2mv',\
           'q2mb','trad','nee','gpp','npp','fvegmp','runsf','runsb','ecan','etran','esoil','fsa','fira',\
-          'apar','psn','sav','sag','rssun','rssha','bgap','wgap','tgv','tgb','chv','chb','irc','irg','shc',\
+          'apar','psn','sav','sag','rssun','rssha','swdn_3d','bgap','wgap','tgv','tgb','chv','chb','irc','irg','shc',\
           'shg','evg','ghv','irb','shb','evb','ghb','tr','evc','chleaf','chuc','chv2','chb2','cosz','azimuth','lat',\
           'lon','fveg','fvgmax','fpice','fcev','fgev','fctr','qsnbot',\
           'foln','smcmax','smcdry','smcref','errwat','zwt0','minzwt',\
@@ -960,7 +960,7 @@ class HydroBlocks:
            n.t2mv,n.t2mb,n.q2mv,n.q2mb,\
            n.trad,n.nee,n.gpp,n.npp,n.fvegmp,n.runsf,\
            n.runsb,n.ecan,n.edir,n.etran,n.fsa,n.fira,\
-           n.apar,n.psn,n.sav,n.sag,n.rssun,n.rssha,\
+           n.apar,n.psn,n.sav,n.sag,n.rssun,n.rssha,n.swdn_3d,\
            n.bgap,n.wgap,n.tgv,n.tgb,n.chv,n.chb,\
            n.shg,n.shc,n.shb,n.evg,n.evb,n.ghv,\
            n.ghb,n.irg,n.irc,n.irb,n.tr,n.evc,\
@@ -1187,7 +1187,7 @@ class HydroBlocks:
   tmp['sfcrunoff'] = np.copy(NOAH.sfcrunoff)
   tmp['runoff'] = NOAH.dt*(np.copy(NOAH.runsf)+np.copy(NOAH.runsb)) #mm 
   tmp['prcp'] = NOAH.dt*np.copy(NOAH.prcp) #W/m2
-  tmp['swdn'] = np.copy(NOAH.swdn) #Pa
+  tmp['swdn_3d'] = np.copy(NOAH.swdn_3d) #W/m2
   tmp['psfc'] = np.copy(NOAH.psfc) #Pa
   tmp['u_ml'] = np.copy(NOAH.u_ml) #m/s
   tmp['t_ml'] = np.copy(NOAH.t_ml) #K
@@ -1384,6 +1384,7 @@ class HydroBlocks:
              'lh':{'description':'Latent heat flux','units':'W/m2','dims':('time','hru',),'precision':4},
              'lwnet':{'description':'Net longwave radiation','units':'W/m2','dims':('time','hru',),'precision':4},
              'swnet':{'description':'Absorbed shortwave radiation','units':'W/m2','dims':('time','hru',),'precision':4},
+             
              "t2mv":{'description':'Vegetated air temperature','units':'K','dims':('time','hru',),'precision':4},
 	     "t2mb":{'description':'Bare air temperature','units':'K','dims':('time','hru',),'precision':4},
 	     "fveg":{'description':'Vegetated fraction','units':'','dims':('time','hru',),'precision':8},
@@ -1407,6 +1408,7 @@ class HydroBlocks:
              "evg":{'description':'Vegetated ground latent heat flux','units':'W/m2','dims':('time','hru',),'precision':4},
              "swdn":{'description':'Shortwave down','units':'W/m2','dims':('time','hru',),'precision':4},
              "lwdn":{'description':'Longwave down','units':'W/m2','dims':('time','hru',),'precision':4},
+             "swdn_3d":{'description':'Shortwave down with 3D topography correction', 'units':'W/m2', 'dims':('time','hru'), 'precision':4},
              'trad':{'description':'Land surface skin temperature','units':'K','dims':('time','hru',),'precision':2},
              'stc':{'description': 'Snow/soil temperature','units':'K','dims':('time','hru',),'precision':2},
              'tv':{'description': 'Canopy temperature','units':'K','dims':('time','hru',),'precision':2},

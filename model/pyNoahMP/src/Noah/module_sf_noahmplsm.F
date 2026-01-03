@@ -414,7 +414,7 @@ contains
                    RUNSRF  , RUNSUB  , APAR    , PSN     , SAV     , SAG     , & ! OUT :
                    FSNO    , NEE     , GPP     , NPP     , FVEG    , ALBEDO  , & ! OUT :
                    QSNBOT  , PONDING , PONDING1, PONDING2, RSSUN   , RSSHA   , & ! OUT :
-		   ALBSND  , ALBSNI  ,                                         & ! OUT :
+		   ALBSND  , ALBSNI  ,  SWDN_3D,                                       & ! OUT :
                    BGAP    , WGAP    , CHV     , CHB     , EMISSI  ,           & ! OUT :
 		   SHG     , SHC     , SHB     , EVG     , EVB     , GHV     , & ! OUT :
 		   GHB     , IRG     , IRC     , IRB     , TR      , EVC     , & ! OUT :
@@ -556,6 +556,7 @@ contains
   REAL                           , INTENT(OUT)   :: RB        ! leaf boundary layer resistance (s/m)
   REAL                           , INTENT(OUT)   :: LAISUN    ! sunlit leaf area index (m2/m2)
   REAL                           , INTENT(OUT)   :: LAISHA    ! shaded leaf area index (m2/m2)
+  REAL                           , INTENT(OUT)   :: SWDN_3D   ! shortwave down radiation corrected for 3d topographic effects (w/m2)
 
 !jref:start; output
   REAL                           , INTENT(OUT)     :: T2MV   !2-m air temperature over vegetated part [k]
@@ -608,7 +609,7 @@ contains
   REAL                                           :: LATHEA !latent heat [j/kg]
   REAL                                           :: SWDOWN !downward solar [w/m2]
   REAL                                           :: QMELT  !snowmelt [mm/s]
-  REAL                                           :: BEG_WB !water storage at begin of a step [mm]
+  REAL                                           :: BEG_WB !water storage at begin of a step [mm]                                   
   REAL,INTENT(OUT)                                              :: IRC    !canopy net LW rad. [w/m2] [+ to atm]
   REAL,INTENT(OUT)                                              :: IRG    !ground net LW rad. [w/m2] [+ to atm]
   REAL,INTENT(OUT)                                              :: SHC    !canopy sen. heat [w/m2]   [+ to atm]
@@ -705,7 +706,7 @@ contains
 
    CALL ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                            &
              PRCPCONV, PRCPNONC,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL, &
-             SOLDN   ,COSZ     ,   AZIM,   ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, &
+             SOLDN   ,COSZ     ,   AZIM,   ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_3D, &
               THAIR   ,QAIR    ,                   & 
              EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   ,SOLAI   , &
              SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      ,FPICE   , PRCP )     
@@ -853,7 +854,7 @@ contains
    IF (OPT_CROP == 1 .and. crop_active) THEN
     CALL CARBON_CROP (parameters,NSNOW  ,NSOIL  ,VEGTYP ,DT     ,ZSOIL  ,JULIAN , & !in 
                          DZSNSO ,STC    ,SMC    ,TV     ,PSN    ,FOLN   ,BTRAN  , & !in
-			 SOLDN  ,T2M    ,                                         & !in
+			 SWDN_3D  ,T2M    ,                                         & !in [ezdev: changed SOLDN with SWDN_3D]
                          LFMASS ,RTMASS ,STMASS ,WOOD   ,STBLCP ,FASTCP ,GRAIN  , & !inout
 			 LAI    ,SAI    ,GDD    ,                                 & !inout
                          GPP    ,NPP    ,NEE    ,AUTORS ,HETERS ,TOTSC  ,TOTLB, PGS    ) !out
@@ -861,7 +862,7 @@ contains
    
 ! water and energy balance check
 
-     CALL ERROR (parameters,SWDOWN ,FSA    ,FSR    ,FIRA   ,FSH    ,FCEV   , & !in
+     CALL ERROR (parameters,SWDN_3D ,FSA    ,FSR    ,FIRA   ,FSH    ,FCEV   , & !in [ezdev: changed SWDOWN with SWDN_3D]
                  FGEV   ,FCTR   ,SSOIL  ,BEG_WB ,CANLIQ ,CANICE , & !in
                  SNEQV  ,WA     ,SMC    ,DZSNSO ,PRCP   ,ECAN   , & !in
                  ETRAN  ,EDIR   ,RUNSRF ,RUNSUB ,DT     ,NSOIL  , & !in
@@ -895,7 +896,7 @@ contains
 
   SUBROUTINE ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                             &
                   PRCPCONV,PRCPNONC ,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL , &
-                  SOLDN   ,COSZ, AZIM, ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV     ,THAIR   ,QAIR    ,                    & 
+                  SOLDN   ,COSZ, AZIM, ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV     ,SWDN_3D, THAIR   ,QAIR    ,                    & 
                   EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   , SOLAI   , &
 		  SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      , FPICE   ,PRCP )     
 ! --------------------------------------------------------------------------------------------------
@@ -942,6 +943,7 @@ contains
   REAL                          , INTENT(OUT) :: FP      !fraction of area receiving precipitation  AJN
   REAL                          , INTENT(OUT) :: FPICE   !fraction of ice                AJN
   REAL                          , INTENT(OUT) :: PRCP    !total precipitation [mm/s]     ! MB/AN : v3.7
+  REAL                          , INTENT(OUT) :: SWDN_3D ! shortwave down total radiation, corrected for 3D effects (w/m2)
 
 !locals
 
@@ -978,23 +980,26 @@ contains
 
        ! ------------ EZDEV TODO: compute 3DRAD radiation correction here
      IF(OPT_3DRAD == 1) THEN
-      write(*,*) 'USING PP RAD - OPTION 1'
+      ! write(*,*) 'USING PP RAD - OPTION 1'
         ! do nothing - plane parallel radiation
      ELSE IF(OPT_3DRAD == 2) THEN
         ! standard 3D radiation correction
-        write(*,*) 'USING 3D RAD - OPTION 2'
+        ! write(*,*) 'USING 3D RAD - OPTION 2'
         SOLAI(1) = 0.75 * SOLAI(1) * ALBOLD / (ALBOLD + 0.01)
         SOLAI(2) = 0.75 * SOLAI(2) * SVF
         SOLAD(1) = 0.75 * SOLAD(1)
         SOLAD(2) = 0.75 * SOLAD(2)
      ELSE IF(OPT_3DRAD == 2) THEN
-      write(*,*) 'USING 3D RAD - OPTION 3'
+      ! write(*,*) 'USING 3D RAD - OPTION 3'
       ! new 3D radiation correction
       SOLAI(1) = 1.25 * SOLAI(1) * ALBOLD / (ALBOLD + 0.01)
       SOLAI(2) = 1.25 * SOLAI(2) * SVF
       SOLAD(1) = 1.25 * SOLAD(1)
       SOLAD(2) = 1.25 * SOLAD(2)
      ENDIF
+
+     ! update total downward radiation
+     SWDN_3D = SOLAD(1)+SOLAD(2)+SOLAI(1)+SOLAI(2)
       ! ------------ EZDEV: END 3DRAD correction
 
 
@@ -1497,7 +1502,7 @@ ENDIF   ! CROPTYPE == 0
 !jref:end   
       WRITE(message,*) 'ERRSW =',ERRSW
       call wrf_message(trim(message))
-      call wrf_error_fatal("Stop in Noah-MP")
+      call wrf_error_fatal("Stop in Noah-MP") ! ezdev: remove error as SW balance changes due to 3drad. TODO: update SWDOWN.
    END IF
 
    ERRENG = SAV+SAG-(FIRA+FSH+FCEV+FGEV+FCTR+SSOIL) +PAH

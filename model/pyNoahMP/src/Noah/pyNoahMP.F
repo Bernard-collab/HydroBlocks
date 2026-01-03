@@ -525,7 +525,7 @@ subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
                   T2MVXY,   T2MBXY,    Q2MVXY,   Q2MBXY,                      &
                   TRADXY,    NEEXY,    GPPXY,     NPPXY,   FVEGXY,   RUNSFXY, &
                   RUNSBXY,   ECANXY,   EDIRXY,   ETRANXY,    FSAXY,    FIRAXY, &
-                  APARXY,    PSNXY,    SAVXY,     SAGXY,  RSSUNXY,   RSSHAXY, &
+                  APARXY,    PSNXY,    SAVXY,     SAGXY,  RSSUNXY,   RSSHAXY, SWDN_3DXY, &
                   BGAPXY,   WGAPXY,    TGVXY,     TGBXY,    CHVXY,     CHBXY, &
                   SHGXY,    SHCXY,    SHBXY,     EVGXY,    EVBXY,     GHVXY, &
                   GHBXY,    IRGXY,    IRCXY,     IRBXY,     TRXY,     EVCXY, &
@@ -745,6 +745,7 @@ subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  SAGXY     ! solar rad absorbed by ground (w/m2)
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  RSSUNXY   ! sunlit leaf stomatal resistance (s/m)
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  RSSHAXY   ! shaded leaf stomatal resistance (s/m)
+    REAL,    DIMENSION(nhru), INTENT(INOUT) ::  SWDN_3DXY ! down shortwave radiation corrected for 3d topography (w/m2)
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  BGAPXY    ! between gap fraction
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  WGAPXY    ! within gap fraction
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  TGVXY     ! under canopy ground temperature[K]
@@ -1124,6 +1125,7 @@ if (debug_flag)then
     print*,'SAGXY',SAGXY
     print*,'RSSUNXY',RSSUNXY
     print*,'RSSHAXY',RSSHAXY
+    print*, 'SWDN_3DXY', SWDN_3DXY
     print*,'BGAPXY',BGAPXY
     print*,'WGAPXY',WGAPXY
     print*,'TGVXY',TGVXY
@@ -1202,7 +1204,7 @@ endif
 	        T2MVXY,   T2MBXY,    Q2MVXY,   Q2MBXY,                      & ! OUT Noah MP only
 	        TRADXY,    NEEXY,    GPPXY,     NPPXY,   FVEGXY,   RUNSFXY, & ! OUT Noah MP only
 	       RUNSBXY,   ECANXY,   EDIRXY,   ETRANXY,    FSAXY,    FIRAXY, & ! OUT Noah MP only
-	        APARXY,    PSNXY,    SAVXY,     SAGXY,  RSSUNXY,   RSSHAXY, & ! OUT Noah MP only
+	        APARXY,    PSNXY,    SAVXY,     SAGXY,  RSSUNXY,   RSSHAXY, SWDN_3DXY, & ! OUT Noah MP only
 		BGAPXY,   WGAPXY,    TGVXY,     TGBXY,    CHVXY,     CHBXY, & ! OUT Noah MP only
 		 SHGXY,    SHCXY,    SHBXY,     EVGXY,    EVBXY,     GHVXY, & ! OUT Noah MP only
 		 GHBXY,    IRGXY,    IRCXY,     IRBXY,     TRXY,     EVCXY, & ! OUT Noah MP only
@@ -1364,6 +1366,7 @@ if (debug_flag)then
     print*,'SAGXY',SAGXY
     print*,'RSSUNXY',RSSUNXY
     print*,'RSSHAXY',RSSHAXY
+    print*, 'SWDN_3DXY', SWDN_3DXY
     print*,'BGAPXY',BGAPXY
     print*,'WGAPXY',WGAPXY
     print*,'TGVXY',TGVXY

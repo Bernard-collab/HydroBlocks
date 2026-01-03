@@ -127,7 +127,10 @@
       "snowh",
       "isnow",
       "fsno",
-      "qsnow"
+      "qsnow",
+      "t2mv",
+      "swdn",
+      "swdn_3d"
       
     ],
     "routing_vars": [
