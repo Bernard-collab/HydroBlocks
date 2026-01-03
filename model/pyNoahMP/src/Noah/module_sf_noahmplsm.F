@@ -954,6 +954,9 @@ contains
   REAL                                        :: PRCP_FROZEN   !total frozen precipitation [mm/s] ! MB/AN : v3.7
   REAL, PARAMETER                             :: RHO_GRPL = 500.0  ! graupel bulk density [kg/m3] ! MB/AN : v3.7
   REAL, PARAMETER                             :: RHO_HAIL = 917.0  ! hail bulk density [kg/m3]    ! MB/AN : v3.7
+  REAL                                        :: SW_REFL_DIR ! shortwave reflected direct [W/m2]
+  REAL                                        :: SW_REFL_DIF ! shortwave reflected diffuse [W/m2]
+  REAL                                        :: LW_REFL ! longwave reflected [W/m2]
 ! --------------------------------------------------------------------------------------------------
 
 !jref: seems like PAIR should be P1000mb??
@@ -986,6 +989,9 @@ contains
       ! write(*,*) 'USING PP RAD - OPTION 1'
         ! do nothing - plane parallel radiation
       LWDN_3D = LWDN
+      LW_REFL = 0.
+      SW_REFL_DIF = 0.
+      SW_REFL_DIR = 0.
      ELSE IF(OPT_3DRAD == 2) THEN
         ! standard 3D radiation correction
         ! write(*,*) 'USING 3D RAD - OPTION 2'
@@ -994,6 +1000,9 @@ contains
         SOLAD(1) = 0.75 * SOLAD(1)
         SOLAD(2) = 0.75 * SOLAD(2)
         LWDN_3D = 0.75 * LWDN
+        LW_REFL = 0.1
+        SW_REFL_DIF = 0.1
+        SW_REFL_DIR = 0.1
      ELSE IF(OPT_3DRAD == 2) THEN
       ! write(*,*) 'USING 3D RAD - OPTION 3'
       ! new 3D radiation correction
@@ -1001,7 +1010,11 @@ contains
       SOLAI(2) = 1.25 * SOLAI(2) * SVF
       SOLAD(1) = 1.25 * SOLAD(1)
       SOLAD(2) = 1.25 * SOLAD(2)
+
       LWDN_3D = 1.25 * LWDN
+      LW_REFL = 0.1
+      SW_REFL_DIF = 0.1
+      SW_REFL_DIR = 0.1
      ENDIF
 
      ! update total downward radiation
