@@ -935,7 +935,7 @@ class HydroBlocks:
   # Update NOAH
   n = self.noahmp
   n.update(n.z_ml,n.dt,n.lwdn,n.swdn,n.u_ml,n.v_ml,n.q_ml,n.t_ml,n.prcp,n.psfc,\
-           n.nowdate,n.xlat,n.xlon,n.cosz,n.tvf, n.svf, n.slope, n.aspect, n.sdelev, n.julian,\
+           n.nowdate,n.xlat,n.xlon,n.cosz,n.azimuth, n.svf, n.tvf, n.slope, n.aspect, n.sdelev, n.julian,\
            n.itime,n.year,\
            n.dzs,n.dx,\
            n.ivgtyp,n.isltyp,n.fvegmp,n.fvgmax,n.tmn,\

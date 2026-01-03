@@ -1,4 +1,4 @@
-subroutine initialize(MMINLU,SNOW,SNOWH,CANWAT,ISLTYP,IVGTYP,XLAT, SVF, TVF, SLOPE, ASPECT, SDELEV, &
+subroutine initialize(MMINLU,SNOW,SNOWH,CANWAT,ISLTYP,IVGTYP,XLAT, XTVF, XSVF, XSLOPE, XASPECT, XSDELEV, &
        TSLB,SMOIS,SH2O,DZS,FNDSOILW,FNDSNOWH,&
        TSK,isnowxy,tvxy,tgxy,canicexy,TMN,XICE,&
        canliqxy ,eahxy    ,tahxy    ,cmxy     ,chxy     ,                     &
@@ -55,11 +55,11 @@ subroutine initialize(MMINLU,SNOW,SNOWH,CANWAT,ISLTYP,IVGTYP,XLAT, SVF, TVF, SLO
 
     character(len=*), intent(in) :: MMINLU
     REAL, DIMENSION(nhru), INTENT(INOUT) :: XLAT         !latitude
-    REAL, DIMENSION(nhru), INTENT(INOUT) :: SLOPE         !
-    REAL, DIMENSION(nhru), INTENT(INOUT) :: ASPECT         !
-    REAL, DIMENSION(nhru), INTENT(INOUT) :: SVF         !       
-    REAL, DIMENSION(nhru), INTENT(INOUT) :: TVF         !
-    REAL, DIMENSION(nhru), INTENT(INOUT) :: SDELEV       !
+    REAL, DIMENSION(nhru), INTENT(INOUT) :: XSLOPE         !
+    REAL, DIMENSION(nhru), INTENT(INOUT) :: XASPECT         !
+    REAL, DIMENSION(nhru), INTENT(INOUT) :: XSVF         !       
+    REAL, DIMENSION(nhru), INTENT(INOUT) :: XTVF         !
+    REAL, DIMENSION(nhru), INTENT(INOUT) :: XSDELEV       !
     REAL, DIMENSION(nhru), INTENT(INOUT) :: TSK         !skin temperature (k)
     REAL, DIMENSION(nhru), INTENT(INOUT) :: TMN         !deep soil temperature (k)
     REAL, DIMENSION(nhru), INTENT(INOUT) :: XICE         !sea ice fraction
@@ -407,11 +407,11 @@ print*,'CANWAT ',CANWAT
 print*,'ISLTYP ',ISLTYP
 print*,'IVGTYP ',IVGTYP
 print*,'XLAT ',XLAT
-print*,'SDELEV ',SDELEV
-print*,'SVF ',SVF
-print*,'TVF ',TVF
-print*,'SLOPE ',SLOPE
-print*,'ASPECT ',ASPECT
+print*,'XSDELEV ',XSDELEV
+print*,'XSVF ',XSVF
+print*,'XTVF ',XTVF
+print*,'XSLOPE ',XSLOPE
+print*,'XASPECT ',XASPECT
 print*,'TSLB ',TSLB
 print*,'SMOIS ',SMOIS
 print*,'SH2O ',SH2O
@@ -500,7 +500,7 @@ end subroutine
 
 
 subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
-                  nowdate,xlat,xlong,coszin,azimuth,julian,nhru,&
+                  nowdate,xlat,xlong,coszin,azimuth, xsvf, xtvf, xslope, xaspect, xsdelev, julian,nhru,&
                   ITIMESTEP,        YR,   &
                   DZS,    NSOIL,       DX,&
                   IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN, &
@@ -563,6 +563,7 @@ subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
  integer,intent(in) :: nhru
  real,dimension(nhru),intent(in) :: lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc
  real,dimension(nhru),intent(in) :: xlat,xlong
+ real,dimension(nhru),intent(in) :: xsvf, xtvf, xslope, xaspect, xsdelev
  real,dimension(nhru),intent(inout) :: coszin
  real,dimension(nhru),intent(inout) :: azimuth ! ezdev added
  real,intent(in) :: zlvl,dt
@@ -1174,7 +1175,7 @@ endif
     !print*,'PSISAT_3D',PSISAT_3D
     !print*,'QUARTZ_3D',QUARTZ_3D
 
-  call noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH,XLAT,XLONG, & ! IN : Time/Space-related
+  call noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH,XSVF, XTVF, XSLOPE, XASPECT, XSDELEV, XLAT,XLONG, & ! IN : Time/Space-related
                   DZ8W,       DT,       DZS,    NSOIL,       DX,            & ! IN : Model configuration 
 	        IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN,            & ! IN : Vegetation/Soil characteristics
 		 XLAND,     XICE,XICE_THRES,  CROPCAT,                      & ! IN : Vegetation/Soil characteristics
@@ -1227,6 +1228,11 @@ if (debug_flag)then
     print*,'AZIMUTH',AZIMUTH
     print*,'XLAT',XLAT
     print*,'XLONG',XLONG
+    print*,'XSVF',XSVF
+    print*,'XTVF',XTVF
+    print*,'XSLOPE',XSLOPE
+    print*,'XASPECT',XASPECT
+    print*,'XSDELEV',XSDELEV
     print*,'DZ8W',DZ8W
     print*,'DTBL',DT
     print*,'DZS',DZS

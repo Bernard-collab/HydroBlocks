@@ -389,7 +389,7 @@ contains
 !== begin noahmp_sflx ==============================================================================
 
   SUBROUTINE NOAHMP_SFLX (parameters, &
-                   ILOC    , JLOC    , LAT     , YEARLEN , JULIAN  , COSZ, AZIM, TVF, SVF, SLOPE, ASPECT, SDELEV     , & ! IN : Time/Space-related
+                   ILOC    , JLOC    , LAT     , YEARLEN , JULIAN  , COSZ, AZIM, SVF, TVF, SLOPE, ASPECT, SDELEV     , & ! IN : Time/Space-related
                    DT      , DX      , DZ8W    , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
                    SHDFAC  , SHDMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
                    SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics
@@ -455,8 +455,8 @@ contains
   REAL                           , INTENT(INOUT) :: ZLVL   !reference height (m)
   REAL                           , INTENT(IN)    :: COSZ   !cosine solar zenith angle [0-1]
   REAL                           , INTENT(IN)    :: AZIM   !solar azimuth angle [0-2pi]
-  REAL                          , INTENT(IN)     :: TVF ! terrain view factor[-]
   REAL                          , INTENT(IN)     :: SVF ! sky view factor [-]
+  REAL                          , INTENT(IN)     :: TVF ! terrain view factor[-]
   REAL                          , INTENT(IN)     :: SLOPE ! topo slope [-]
   REAL                          , INTENT(IN)     :: ASPECT ! topo aspect [-]
   REAL                          , INTENT(IN)     :: SDELEV ! elevation standard deviation [m]
@@ -705,7 +705,7 @@ contains
 
    CALL ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                            &
              PRCPCONV, PRCPNONC,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL, &
-             SOLDN   ,COSZ     ,   AZIM,   ALBOLD, TVF, SVF, SLOPE, ASPECT, SDELEV, &
+             SOLDN   ,COSZ     ,   AZIM,   ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, &
               THAIR   ,QAIR    ,                   & 
              EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   ,SOLAI   , &
              SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      ,FPICE   , PRCP )     
@@ -895,7 +895,7 @@ contains
 
   SUBROUTINE ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                             &
                   PRCPCONV,PRCPNONC ,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL , &
-                  SOLDN   ,COSZ, AZIM, ALBOLD, TVF, SVF, SLOPE, ASPECT, SDELEV     ,THAIR   ,QAIR    ,                    & 
+                  SOLDN   ,COSZ, AZIM, ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV     ,THAIR   ,QAIR    ,                    & 
                   EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   , SOLAI   , &
 		  SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      , FPICE   ,PRCP )     
 ! --------------------------------------------------------------------------------------------------
@@ -919,8 +919,8 @@ contains
   REAL                          , INTENT(IN)  :: COSZ   !cosine solar zenith angle [0-1]
   REAL                          , INTENT(IN)  :: AZIM   !solar azimuth angle [0-2pi]
   REAL                          , INTENT(IN)  :: ALBOLD  ! albedo at previous time step [to compute reflections]
-  REAL                          , INTENT(IN)  :: TVF ! terrain view factor[-]
   REAL                          , INTENT(IN)  :: SVF ! sky view factor [-]
+  REAL                          , INTENT(IN)  :: TVF ! terrain view factor[-]
   REAL                          , INTENT(IN)  :: SLOPE ! topo slope [-]
   REAL                          , INTENT(IN)  :: ASPECT ! topo aspect [-]
   REAL                          , INTENT(IN)  :: SDELEV ! elevation standard deviation [m]
