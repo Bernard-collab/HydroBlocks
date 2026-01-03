@@ -490,7 +490,7 @@ end subroutine
 
 
 subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
-                  nowdate,xlat,xlong,coszin,julian,nhru,&
+                  nowdate,xlat,xlong,coszin,azimuth,julian,nhru,&
                   ITIMESTEP,        YR,   &
                   DZS,    NSOIL,       DX,&
                   IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN, &
@@ -554,6 +554,7 @@ subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
  real,dimension(nhru),intent(in) :: lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc
  real,dimension(nhru),intent(in) :: xlat,xlong
  real,dimension(nhru),intent(inout) :: coszin
+ real,dimension(nhru),intent(inout) :: azimuth ! ezdev added
  real,intent(in) :: zlvl,dt
  real,intent(inout) :: julian
  CHARACTER(LEN=19), INTENT(IN)  :: NOWDATE
@@ -965,7 +966,7 @@ kte = 2
       !IF(SF_URBAN_PHYSICS == 0) THEN
       !  CALL CALC_DECLIN(NOWDATE,XLAT(I), XLONG(I),COSZEN(I),JULIAN)
       !ELSE
-        CALL CALC_DECLIN(NOWDATE,XLAT(I), XLONG(I),COSZIN(I),JULIAN, &
+        CALL CALC_DECLIN(NOWDATE,XLAT(I), XLONG(I),COSZIN(I),AZIMUTH(I), JULIAN, &
                          HRANG(I), DECLIN, GMT, JULDAY)
       !ENDIF
     enddo
@@ -976,6 +977,7 @@ if (debug_flag)then
     print*,'YR',YR
     print*,'JULIAN',JULIAN
     print*,'COSZEN',COSZIN
+    print*,'AZIMUTH',AZIMUTH
     print*,'XLAT',XLAT
     print*,'XLONG',XLONG
     print*,'DZ8W',DZ8W
@@ -1160,7 +1162,7 @@ endif
     !print*,'PSISAT_3D',PSISAT_3D
     !print*,'QUARTZ_3D',QUARTZ_3D
 
-  call noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,XLAT,XLONG, & ! IN : Time/Space-related
+  call noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH,XLAT,XLONG, & ! IN : Time/Space-related
                   DZ8W,       DT,       DZS,    NSOIL,       DX,            & ! IN : Model configuration 
 	        IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN,            & ! IN : Vegetation/Soil characteristics
 		 XLAND,     XICE,XICE_THRES,  CROPCAT,                      & ! IN : Vegetation/Soil characteristics
@@ -1210,6 +1212,7 @@ if (debug_flag)then
     print*,'YR',YR
     print*,'JULIAN',JULIAN
     print*,'COSZEN',COSZIN
+    print*,'AZIMUTH',AZIMUTH
     print*,'XLAT',XLAT
     print*,'XLONG',XLONG
     print*,'DZ8W',DZ8W
@@ -1386,6 +1389,7 @@ if (debug_flag)then
            print*,'itimestep',itimestep
            print*,'dtbl',dt
            print*,'coszen',coszin
+           print*,'azimuth',azimuth
            print*,'xlat',xlat
            print*,'t_phy',t_phy
            print*,'qv_curr',qv_curr
@@ -1599,6 +1603,7 @@ if (debug_flag)then
            print*,'itimestep',itimestep
            print*,'dtbl',dt
            print*,'coszen',coszin
+           print*,'azimuth',azimuth
            print*,'xlat',xlat
            print*,'t_phy',t_phy
            print*,'qv_curr',qv_curr
@@ -1761,7 +1766,7 @@ end subroutine
 
 !------------------------------------------------------------------------------------
 
-SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, JULIAN, &
+SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, AZIMUTH, JULIAN, &
                          HRANG_OUT, DECLIN_OUT, GMT_OUT, JULDAY_OUT )
 
   USE MODULE_DATE_UTILITIES
@@ -1774,6 +1779,7 @@ SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, JULIAN, &
    REAL,              INTENT(IN)  :: LATITUDE
    REAL,              INTENT(IN)  :: LONGITUDE
    REAL,              INTENT(OUT) :: COSZ
+   REAL,              INTENT(OUT) :: AZIMUTH ! EZDEV ADDED
    REAL,              INTENT(OUT) :: JULIAN
    !REAL,    OPTIONAL, INTENT(OUT) :: HRANG_OUT
    !REAL,    OPTIONAL, INTENT(OUT) :: DECLIN_OUT
@@ -1829,6 +1835,8 @@ SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, JULIAN, &
    TLOCTIM = AMOD(TLOCTIM+24.0, 24.0)
    HRANG=15.*(TLOCTIM-12.)*DEGRAD
    COSZ=SIN(LATITUDE*DEGRAD)*SIN(DECLIN)+COS(LATITUDE*DEGRAD)*COS(DECLIN)*COS(HRANG)
+
+   AZIMUTH = ATAN2(SIN(HRANG), COS(HRANG)*SIN(LATITUDE*DEGRAD)-TAN(DECLIN)*COS(LATITUDE*DEGRAD)) ! EZDEV ADDED SOLAR AZIMUTH ANGLE
    
    !IF (PRESENT(HRANG_OUT ))  HRANG_OUT = HRANG
    !IF (PRESENT(DECLIN_OUT)) DECLIN_OUT = DECLIN

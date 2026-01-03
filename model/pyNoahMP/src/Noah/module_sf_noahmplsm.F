@@ -384,7 +384,7 @@ contains
 !== begin noahmp_sflx ==============================================================================
 
   SUBROUTINE NOAHMP_SFLX (parameters, &
-                   ILOC    , JLOC    , LAT     , YEARLEN , JULIAN  , COSZ    , & ! IN : Time/Space-related
+                   ILOC    , JLOC    , LAT     , YEARLEN , JULIAN  , COSZ, AZIM    , & ! IN : Time/Space-related
                    DT      , DX      , DZ8W    , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
                    SHDFAC  , SHDMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
                    SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics
@@ -449,6 +449,7 @@ contains
   REAL                           , INTENT(IN)    :: SFCPRS !pressure (pa)
   REAL                           , INTENT(INOUT) :: ZLVL   !reference height (m)
   REAL                           , INTENT(IN)    :: COSZ   !cosine solar zenith angle [0-1]
+  REAL                           , INTENT(IN)    :: AZIM   !solar azimuth angle [0-2pi]
   REAL                           , INTENT(IN)    :: TBOT   !bottom condition for soil temp. [K]
   REAL                           , INTENT(IN)    :: FOLN   !foliage nitrogen (%) [1-saturated]
   REAL                           , INTENT(IN)    :: SHDFAC !green vegetation fraction [0.0-1.0]
@@ -694,7 +695,7 @@ contains
 
    CALL ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                            &
              PRCPCONV, PRCPNONC,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL, &
-             SOLDN   ,COSZ     ,THAIR   ,QAIR    ,                   & 
+             SOLDN   ,COSZ     ,   AZIM,   ALBOLD,   THAIR   ,QAIR    ,                   & 
              EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   ,SOLAI   , &
              SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      ,FPICE   , PRCP )     
 
@@ -883,7 +884,7 @@ contains
 
   SUBROUTINE ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                             &
                   PRCPCONV,PRCPNONC ,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL , &
-                  SOLDN   ,COSZ     ,THAIR   ,QAIR    ,                    & 
+                  SOLDN   ,COSZ, AZIM, ALBOLD     ,THAIR   ,QAIR    ,                    & 
                   EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   , SOLAI   , &
 		  SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      , FPICE   ,PRCP )     
 ! --------------------------------------------------------------------------------------------------
@@ -905,6 +906,8 @@ contains
   REAL                          , INTENT(IN)  :: PRCPHAIL ! hail entering land model [mm/s]              ! MB/AN : v3.7
   REAL                          , INTENT(IN)  :: SOLDN  !downward shortwave radiation (w/m2)
   REAL                          , INTENT(IN)  :: COSZ   !cosine solar zenith angle [0-1]
+  REAL                          , INTENT(IN)  :: AZIM   !solar azimuth angle [0-2pi]
+  REAL                          , INTENT(IN)  :: ALBOLD  ! albedo at previous time step [to compute reflections]
 
 ! outputs
 
@@ -947,10 +950,19 @@ contains
           SWDOWN = SOLDN
        END IF 
 
+       
+
+
+       ! EZDEV TODO: improve this partitioning
        SOLAD(1) = SWDOWN*0.7*0.5     ! direct  vis
        SOLAD(2) = SWDOWN*0.7*0.5     ! direct  nir
        SOLAI(1) = SWDOWN*0.3*0.5     ! diffuse vis
        SOLAI(2) = SWDOWN*0.3*0.5     ! diffuse nir
+
+       ! EZDEV TODO: compute 3DRAD radiation correction here
+       !....
+
+       ! EZDEV: END 3DRAD correction
 
        PRCP = PRCPCONV + PRCPNONC + PRCPSHCV
 

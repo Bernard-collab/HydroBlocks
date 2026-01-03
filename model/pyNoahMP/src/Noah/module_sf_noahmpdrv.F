@@ -9,7 +9,7 @@ MODULE module_sf_noahmpdrv
 !
 CONTAINS
 !
-  SUBROUTINE noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,XLAT,XLONG, & ! IN : Time/Space-related
+  SUBROUTINE noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH,XLAT,XLONG, & ! IN : Time/Space-related
                   DZ8W,       DT,       DZS,    NSOIL,       DX,            & ! IN : Model configuration 
 	        IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN,            & ! IN : Vegetation/Soil characteristics
 		 XLAND,     XICE,XICE_THRES,  CROPCAT,                      & ! IN : Vegetation/Soil characteristics
@@ -72,6 +72,7 @@ CONTAINS
     INTEGER,                                         INTENT(IN   ) ::  YR        ! 4-digit year
     REAL,                                            INTENT(IN   ) ::  JULIAN    ! Julian day
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  COSZIN    ! cosine zenith angle
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  AZIMUTH   ! solar azimuth angle
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XLAT      ! latitude [rad]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XLONG     ! latitude [rad]
     REAL,    DIMENSION( ims:ime, kms:kme, jms:jme ), INTENT(IN   ) ::  DZ8W      ! thickness of atmo layers [m]
@@ -279,6 +280,7 @@ CONTAINS
 ! IN only
 
     REAL                                :: COSZ         ! cosine zenith angle
+    REAL                                :: AZIM         ! solar azimuth angle
     REAL                                :: LAT          ! latitude [rad]
     REAL                                :: Z_ML         ! model height [m]
     INTEGER                             :: VEGTYP       ! vegetation type
@@ -548,6 +550,7 @@ CONTAINS
 ! IN only
 
        COSZ   = COSZIN  (I,J)                         ! cos zenith angle []
+       AZIM  = AZIMUTH  (I,J)                         ! sol azimuth angle, ezdev
        LAT    = XLAT  (I,J)                           ! latitude [rad]
        Z_ML   = 0.5*DZ8W(I,1,J)                       ! DZ8W: thickness of full levels; ZLVL forcing height [m]
        VEGTYP = IVGTYP(I,J)                           ! vegetation type
@@ -870,7 +873,7 @@ CONTAINS
     ELSE
          ICE=0                              ! Neither sea ice or land ice.
          CALL NOAHMP_SFLX (parameters, &
-            I       , J       , LAT     , YEARLEN , JULIAN  , COSZ    , & ! IN : Time/Space-related
+            I       , J       , LAT     , YEARLEN , JULIAN  , COSZ   AZIM , & ! IN : Time/Space-related
             DT      , DX      , DZ8W1D  , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
             FVEG    , FVGMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
             SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics
