@@ -873,7 +873,7 @@ CONTAINS
     ELSE
          ICE=0                              ! Neither sea ice or land ice.
          CALL NOAHMP_SFLX (parameters, &
-            I       , J       , LAT     , YEARLEN , JULIAN  , COSZ   AZIM , & ! IN : Time/Space-related
+            I       , J       , LAT     , YEARLEN , JULIAN  , COSZ,   AZIM , & ! IN : Time/Space-related
             DT      , DX      , DZ8W1D  , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
             FVEG    , FVGMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
             SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics
