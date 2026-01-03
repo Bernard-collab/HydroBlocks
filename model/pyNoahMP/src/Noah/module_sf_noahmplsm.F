@@ -964,10 +964,25 @@ contains
        SOLAI(1) = SWDOWN*0.3*0.5     ! diffuse vis
        SOLAI(2) = SWDOWN*0.3*0.5     ! diffuse nir
 
-       ! EZDEV TODO: compute 3DRAD radiation correction here
-       !....
 
-       ! EZDEV: END 3DRAD correction
+       ! ------------ EZDEV TODO: compute 3DRAD radiation correction here
+       IF(OPT_SNF == 1) THEN
+        ! do nothing - plane parallel radiation
+     ELSE IF(OPT_SNF == 2) THEN
+        ! standard 3D radiation correction
+        SOLAI(1) = 0.75 * SOLAI(1) * ALBOLD / (ALBOLD + 0.01)
+        SOLAI(2) = 0.75 * SOLAI(2)
+        SOLAD(1) = 0.75 * SOLAD(1)
+        SOLAD(2) = 0.75 * SOLAD(2)
+     ELSE IF(OPT_SNF == 2) THEN
+      ! new 3D radiation correction
+      SOLAI(1) = 1.25 * SOLAI(1) * ALBOLD / (ALBOLD + 0.01)
+      SOLAI(2) = 1.25 * SOLAI(2)
+      SOLAD(1) = 1.25 * SOLAD(1)
+      SOLAD(2) = 1.25 * SOLAD(2)
+     ENDIF
+      ! ------------ EZDEV: END 3DRAD correction
+
 
        PRCP = PRCPCONV + PRCPNONC + PRCPSHCV
 
