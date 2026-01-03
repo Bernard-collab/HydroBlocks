@@ -36,7 +36,7 @@ CONTAINS
 	        T2MVXY,   T2MBXY,    Q2MVXY,   Q2MBXY,                      & ! OUT Noah MP only
 	        TRADXY,    NEEXY,    GPPXY,     NPPXY,   FVEGXY,   RUNSFXY, & ! OUT Noah MP only
 	       RUNSBXY,   ECANXY,   EDIRXY,   ETRANXY,    FSAXY,    FIRAXY, & ! OUT Noah MP only
-	        APARXY,    PSNXY,    SAVXY,     SAGXY,  RSSUNXY,   RSSHAXY, SWDN_3DXY, & ! OUT Noah MP only
+	        APARXY,    PSNXY,    SAVXY,     SAGXY,  RSSUNXY,   RSSHAXY, SWDN_3DXY, LWDN_3DXY, & ! OUT Noah MP only
 		BGAPXY,   WGAPXY,    TGVXY,     TGBXY,    CHVXY,     CHBXY, & ! OUT Noah MP only
 		 SHGXY,    SHCXY,    SHBXY,     EVGXY,    EVBXY,     GHVXY, & ! OUT Noah MP only
 		 GHBXY,    IRGXY,    IRCXY,     IRBXY,     TRXY,     EVCXY, & ! OUT Noah MP only
@@ -254,6 +254,7 @@ CONTAINS
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  RSSUNXY   ! sunlit leaf stomatal resistance (s/m)
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  RSSHAXY   ! shaded leaf stomatal resistance (s/m)
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  SWDN_3DXY ! down shortwave radiation corrected for 3d topographic effects (w/m2)
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  LWDN_3DXY ! down longwave radiation corrected for 3d topographic effects (w/m2)
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  BGAPXY    ! between gap fraction
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  WGAPXY    ! within gap fraction
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  TGVXY     ! under canopy ground temperature[K]
@@ -400,7 +401,8 @@ CONTAINS
     REAL                                :: RSSHA        ! shaded leaf stomatal resistance (s/m)
     REAL, DIMENSION(1:2)                :: ALBSND       ! snow albedo (direct)
     REAL, DIMENSION(1:2)                :: ALBSNI       ! snow albedo (diffuse)
-    REAL                                :: SWDN3D       ! down shortwave radiation corrected for 3D effects (w/m2)
+    REAL                                :: SWDN_3D      ! down shortwave radiation corrected for 3D effects (w/m2)
+    REAL                                :: LWDN_3D      ! down longwave radiation corrected for 3D effects (w/m2)
     REAL                                :: RB           ! leaf boundary layer resistance (s/m)
     REAL                                :: LAISUN       ! sunlit leaf area index (m2/m2)
     REAL                                :: LAISHA       ! shaded leaf area index (m2/m2)
@@ -857,7 +859,8 @@ CONTAINS
          SAV    = undefined_value 
          RSSUN  = undefined_value 
          RSSHA  = undefined_value
-         SWDN3D =undefined_value 
+         SWDN_3D= undefined_value 
+         LWDN_3D= undefined_value
          RB     = undefined_value
          LAISUN = undefined_value
          LAISHA = undefined_value
@@ -917,7 +920,7 @@ CONTAINS
             RUNSF   , RUNSB   , APAR    , PSN     , SAV     , SAG     , & ! OUT : 
             FSNO    , NEE     , GPP     , NPP     , FVEGMP  , SALB    , & ! OUT : 
             QSNBOT  , PONDING , PONDING1, PONDING2, RSSUN   , RSSHA   , & ! OUT : 
-            ALBSND  , ALBSNI  , SWDN3D,                                & ! OUT :
+            ALBSND  , ALBSNI  , SWDN_3D, LWDN_3D,                       & ! OUT :
             BGAP    , WGAP    , CHV     , CHB     , EMISSI  ,           & ! OUT : 
             SHG     , SHC     , SHB     , EVG     , EVB     , GHV     , & ! OUT :
 	    GHB     , IRG     , IRC     , IRB     , TR      , EVC     , & ! OUT :
@@ -1023,7 +1026,8 @@ CONTAINS
              SAGXY    (I,J)                = SAG
              RSSUNXY  (I,J)                = RSSUN
              RSSHAXY  (I,J)                = RSSHA
-             SWDN_3DXY(I,J)                = SWDN3D
+             SWDN_3DXY(I,J)                = SWDN_3D
+             LWDN_3DXY(I,J)                = LWDN_3D
              !LAISUN                        = MAX(LAISUN, 0.0)
              !LAISHA                        = MAX(LAISHA, 0.0)
              !RB                            = MAX(RB, 0.0)

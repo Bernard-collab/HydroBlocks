@@ -414,7 +414,7 @@ contains
                    RUNSRF  , RUNSUB  , APAR    , PSN     , SAV     , SAG     , & ! OUT :
                    FSNO    , NEE     , GPP     , NPP     , FVEG    , ALBEDO  , & ! OUT :
                    QSNBOT  , PONDING , PONDING1, PONDING2, RSSUN   , RSSHA   , & ! OUT :
-		   ALBSND  , ALBSNI  ,  SWDN_3D,                                       & ! OUT :
+		   ALBSND  , ALBSNI  ,  SWDN_3D, LWDN_3D,                                  & ! OUT :
                    BGAP    , WGAP    , CHV     , CHB     , EMISSI  ,           & ! OUT :
 		   SHG     , SHC     , SHB     , EVG     , EVB     , GHV     , & ! OUT :
 		   GHB     , IRG     , IRC     , IRB     , TR      , EVC     , & ! OUT :
@@ -557,6 +557,7 @@ contains
   REAL                           , INTENT(OUT)   :: LAISUN    ! sunlit leaf area index (m2/m2)
   REAL                           , INTENT(OUT)   :: LAISHA    ! shaded leaf area index (m2/m2)
   REAL                           , INTENT(OUT)   :: SWDN_3D   ! shortwave down radiation corrected for 3d topographic effects (w/m2)
+  REAL                           , INTENT(OUT)   :: LWDN_3D   ! longwave down radiation corercted for 3d topographic effects (w/m2)
 
 !jref:start; output
   REAL                           , INTENT(OUT)     :: T2MV   !2-m air temperature over vegetated part [k]
@@ -706,7 +707,7 @@ contains
 
    CALL ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                            &
              PRCPCONV, PRCPNONC,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL, &
-             SOLDN   ,COSZ     ,   AZIM,   ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_3D, &
+             SOLDN   ,LWDN, COSZ     ,   AZIM,   ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_3D, LWDN_3D, &
               THAIR   ,QAIR    ,                   & 
              EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   ,SOLAI   , &
              SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      ,FPICE   , PRCP )     
@@ -896,7 +897,7 @@ contains
 
   SUBROUTINE ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                             &
                   PRCPCONV,PRCPNONC ,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL , &
-                  SOLDN   ,COSZ, AZIM, ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV     ,SWDN_3D, THAIR   ,QAIR    ,                    & 
+                  SOLDN   ,LWDN, COSZ, AZIM, ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV     ,SWDN_3D, LWDN_3D, THAIR   ,QAIR    ,                    & 
                   EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   , SOLAI   , &
 		  SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      , FPICE   ,PRCP )     
 ! --------------------------------------------------------------------------------------------------
@@ -917,6 +918,7 @@ contains
   REAL                          , INTENT(IN)  :: PRCPGRPL ! graupel entering land model [mm/s]           ! MB/AN : v3.7
   REAL                          , INTENT(IN)  :: PRCPHAIL ! hail entering land model [mm/s]              ! MB/AN : v3.7
   REAL                          , INTENT(IN)  :: SOLDN  !downward shortwave radiation (w/m2)
+  REAL                          , INTENT(IN)  :: LWDN   ! downward longwave radiation (w/m2)
   REAL                          , INTENT(IN)  :: COSZ   !cosine solar zenith angle [0-1]
   REAL                          , INTENT(IN)  :: AZIM   !solar azimuth angle [0-2pi]
   REAL                          , INTENT(IN)  :: ALBOLD  ! albedo at previous time step [to compute reflections]
@@ -944,6 +946,7 @@ contains
   REAL                          , INTENT(OUT) :: FPICE   !fraction of ice                AJN
   REAL                          , INTENT(OUT) :: PRCP    !total precipitation [mm/s]     ! MB/AN : v3.7
   REAL                          , INTENT(OUT) :: SWDN_3D ! shortwave down total radiation, corrected for 3D effects (w/m2)
+  REAL                          , INTENT(OUT) :: LWDN_3D ! longwave down total radiation, corrected for 3D effects (w/m2)
 
 !locals
 
@@ -982,6 +985,7 @@ contains
      IF(OPT_3DRAD == 1) THEN
       ! write(*,*) 'USING PP RAD - OPTION 1'
         ! do nothing - plane parallel radiation
+      LWDN_3D = LWDN
      ELSE IF(OPT_3DRAD == 2) THEN
         ! standard 3D radiation correction
         ! write(*,*) 'USING 3D RAD - OPTION 2'
@@ -989,6 +993,7 @@ contains
         SOLAI(2) = 0.75 * SOLAI(2) * SVF
         SOLAD(1) = 0.75 * SOLAD(1)
         SOLAD(2) = 0.75 * SOLAD(2)
+        LWDN_3D = 0.75 * LWDN
      ELSE IF(OPT_3DRAD == 2) THEN
       ! write(*,*) 'USING 3D RAD - OPTION 3'
       ! new 3D radiation correction
@@ -996,10 +1001,13 @@ contains
       SOLAI(2) = 1.25 * SOLAI(2) * SVF
       SOLAD(1) = 1.25 * SOLAD(1)
       SOLAD(2) = 1.25 * SOLAD(2)
+      LWDN_3D = 1.25 * LWDN
      ENDIF
 
      ! update total downward radiation
      SWDN_3D = SOLAD(1)+SOLAD(2)+SOLAI(1)+SOLAI(2)
+     ! update total longwave down
+     
       ! ------------ EZDEV: END 3DRAD correction
 
 
