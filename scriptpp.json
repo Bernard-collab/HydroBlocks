@@ -1,13 +1,13 @@
 {
   "rdir": "/projects/ezorzetto@xsede.org/snow_experiment",
-  "experiment": "MSWX_3h_Snow_Project_3",
+  "experiment": "MSWX_3h_Snow_Project_pp",
   "startdate": {
     "year": 2014,
     "month": 1,
     "day": 1
   },
   "enddate": {
-    "year": 2024,
+    "year": 2016,
     "month": 12,
     "day": 29
   },
