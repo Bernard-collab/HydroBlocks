@@ -25,6 +25,7 @@ import collections
 import shapely.geometry
 import rasterio
 from rasterio.transform import from_bounds
+import topocalc
 #dir = os.path.dirname(os.path.abspath(__file__))
 #sys.path.append('%s/../HydroBlocks/pyHWU/' % dir )
 #import management_funcs as mgmt_funcs
@@ -273,6 +274,7 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
         'BB','F11','SATPSI','SATDW','QTZ','clay',
         'WLTSMC','MAXSMC','DRYSMC','REFSMC','SATDK',
         'm','hand','y_aspect','x_aspect','hru','hband',
+        'svf', 'tcf',
         'lats','lons']
 
  #if hydroblocks_info['water_management']['hwu_agric_flag']:
@@ -280,7 +282,7 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  #   vars.append(var)
 
  for var in vars:
-  if var in ['slope','area_pct','land_cover','channel','dem','soil_texture_class','ti','carea','area','F11','clay','m','hand','y_aspect','x_aspect','hru','hband','lats','lons']: #laura svp
+  if var in ['slope','area_pct','land_cover','channel','dem','soil_texture_class','ti','carea','area','F11','clay','m','hand','y_aspect','x_aspect','svf','tcf','hru','hband','lats','lons']: #laura svp
    grp.createVariable(var,'f4',('hru',))#,zlib=True)
    grp.variables[var][:] = data['parameters']['hru'][var] #laura svp
   else: #laura svp
@@ -337,6 +339,11 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  (slope,aspect) = terrain_tools.ttf.calculate_slope_and_aspect(np.flipud(demns),res_array,res_array)
  slope = np.flipud(slope)
  aspect = np.flipud(aspect)
+
+ # ezdev: compute sky view factor and terrain view factor
+ # grid cell spacing for the DEM
+# dem_spacing = 30
+svf, tvf = viewf(demns, spacing=eares, nangles = 16) # default nangles is 72
 
  #Compute accumulated area
  m2 = np.copy(mask_all)
@@ -438,10 +445,14 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  area[mask != 1] = -9999
  channels[mask != 1] = -9999
  basins[mask != 1] = -9999
+ svf[mask != 1] = -9999 # ezdev
+ tvf[mask != 1] = -9999 # ezdev
 
  # save covariates
  covariates['slope'] = slope
  covariates['aspect'] = aspect
+ covariates['svf'] = svf
+ covariates['tvf'] = tvf
  covariates['x_aspect'] = np.sin(aspect)
  covariates['y_aspect'] = np.cos(aspect)
  covariates['carea'] = area_all_cp#area
@@ -858,6 +869,8 @@ def Assign_Parameters_Semidistributed_svp(covariates,metadata,hydroblocks_info,O
   OUTPUT['parameters']['hru']['carea'][hru] = np.nanmean(covariates['carea'][idx])
   OUTPUT['parameters']['hru']['x_aspect'][hru] = np.nanmean(covariates['x_aspect'][idx])
   OUTPUT['parameters']['hru']['y_aspect'][hru] = np.nanmean(covariates['y_aspect'][idx])
+  OUTPUT['parameters']['hru']['svf'][hru] = np.nanmean(covariates['svf'][idx])
+  OUTPUT['parameters']['hru']['tvf'][hru] = np.nanmean(covariates['tvf'][idx])
   #Average geographic coordinates
   OUTPUT['parameters']['hru']['lats'][hru] = np.nanmean(covariates['lats'][idx])
   OUTPUT['parameters']['hru']['lons'][hru] = np.nanmean(covariates['lons'][idx])
