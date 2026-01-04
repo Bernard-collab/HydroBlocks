@@ -1007,7 +1007,8 @@ contains
        SINZ = SQRT(1-COSZ**2)
        COS_INC = COSZ * COS(SLOPE_RAD) + SINZ * SIN(SLOPE_RAD)*COS_AZIM_ASPECT
        COS_INC = min(max(COS_INC, -1.0), 1.0)
-       ! COS_INC_OVER_COSZ = max(min(3.0, COS_INC/COSZ), -3.0)
+       ! COS_INC_OVER_COSZ = COS_INC/COSZ
+       ! COS_INC_OVER_COSZ = max(min(10.0, COS_INC/COSZ), 0.0)
        ! COS_INC_OVER_COSZ = 1.0
        ! TVF = max(TVF, 0.)
        ! SVF = min(max(SVF, 0.), 1.)
@@ -1023,7 +1024,9 @@ contains
       SW_REFL_DIR = ALBOLD * SOLAD * TVF
 
 
-      IF (ISSHADE) THEN
+      IF (ISSHADE) THEN ! cast shade
+        SOLAD = SW_REFL_DIR
+      ELSE IF (COS_INC < 0.0) THEN ! self shade
         SOLAD = SW_REFL_DIR
       ELSE
         SOLAD = SOLAD * COS_INC_OVER_COSZ  + SW_REFL_DIR
