@@ -1,6 +1,6 @@
 {
   "rdir": "/projects/ezorzetto@xsede.org/snow_experiment",
-  "experiment": "MSWX_3h_Snow_Project_3d",
+  "experiment": "MSWX_3h_Snow_Project_4_3d",
   "startdate": {
     "year": 2014,
     "month": 1,
@@ -121,7 +121,7 @@
   },
   "output": {
     "vars": [
-      "smc",
+      "totsmc",
       "swe",
       "snow_t",
       "snowh",

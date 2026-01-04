@@ -567,11 +567,11 @@ CONTAINS
        COSZ   = COSZIN  (I,J)                         ! cos zenith angle []
        AZIM  = AZIMUTH  (I,J)                         ! sol azimuth angle, ezdev
        LAT    = XLAT  (I,J)                           ! latitude [rad]
-       SVF    = XSVF  (I,J)                           ! 
-       TVF    = XTVF  (I,J)                           ! 
-       SLOPE    = XSLOPE (I,J)                        ! 
-       ASPECT    = XASPECT  (I,J)                     ! 
-       SDELEV    = XSDELEV  (I,J)                     ! 
+       SVF    = XSVF  (I,J)                           ! sky view factor []
+       TVF    = XTVF  (I,J)                           ! terrain view factor []
+       SLOPE    = XSLOPE (I,J)                        ! terrain slope []
+       ASPECT    = XASPECT  (I,J)                     ! terrain aspect []
+       SDELEV    = XSDELEV  (I,J)                     ! standard deviation of elevation [m]
        Z_ML   = 0.5*DZ8W(I,1,J)                       ! DZ8W: thickness of full levels; ZLVL forcing height [m]
        VEGTYP = IVGTYP(I,J)                           ! vegetation type
        if(iopt_soil == 1) then

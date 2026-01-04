@@ -28,6 +28,7 @@ from rasterio.transform import from_bounds
 # import topocalc
 from topocalc.viewf import viewf
 from topocalc.gradient import gradient_d8
+from topocalc.horizon import horizon
 #dir = os.path.dirname(os.path.abspath(__file__))
 #sys.path.append('%s/../HydroBlocks/pyHWU/' % dir )
 #import management_funcs as mgmt_funcs
@@ -224,6 +225,57 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  metadata['nodata'] = -9999.0
  gdal_tools.write_raster(file_ca,metadata,channel_map)
 
+ #Write out the svf map
+ svf_map = np.copy(covariates['svf'])
+ svf_map[np.isnan(svf_map) == 1] = -9999.0
+ file_ca = '%s/svf_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,svf_map)
+
+#Write out the tvf map
+ tvf_map = np.copy(covariates['tvf'])
+ tvf_map[np.isnan(tvf_map) == 1] = -9999.0
+ file_ca = '%s/tvf_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,tvf_map)
+
+ #Write out the aspect map
+ aspect_map = np.copy(covariates['aspect'])
+ aspect_map[np.isnan(aspect_map) == 1] = -9999.0
+ file_ca = '%s/aspect_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,aspect_map)
+
+ #Write out the x_aspect map
+ x_aspect_map = np.copy(covariates['x_aspect'])
+ x_aspect_map[np.isnan(x_aspect_map) == 1] = -9999.0
+ file_ca = '%s/x_aspect_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,x_aspect_map)
+
+ #Write out the y_aspect map
+ y_aspect_map = np.copy(covariates['y_aspect'])
+ y_aspect_map[np.isnan(y_aspect_map) == 1] = -9999.0
+ file_ca = '%s/y_aspect_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,y_aspect_map)
+
+ #Write out the slope map
+ slope_map = np.copy(covariates['slope'])
+ slope_map[np.isnan(slope_map) == 1] = -9999.0
+ file_ca = '%s/slope_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,slope_map)
+
+#Write out the dem map
+ dem_map = np.copy(covariates['sdelev'])
+ dem_map[np.isnan(dem_map) == 1] = -9999.0
+ file_ca = '%s/dem_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,dem_map)
+
+ 
+
  #Write the connection matrices
  #width
  #laura's modification start
@@ -341,12 +393,42 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  (slope,aspect) = terrain_tools.ttf.calculate_slope_and_aspect(np.flipud(demns),res_array,res_array)
  slope = np.flipud(slope)
  aspect = np.flipud(aspect)
+ # ezdev note: geospatial tools computes slope as a tangent, and aspect in rad. 
+ # South=0, East=pi/2, up to pi, West -pi/2 up to -pi (North = -pi/2 and pi/2)
+
+ # compute horizons for a given azimuth
+ myazi = 0.0
+ myhor = horizon(myazi, np.float64(demns), eares)
+
+ # ezdev note: topocalc computes slope as angle in radians
+ # and aspect as angle in deg [option for radians] start o at North and increases clockwise to 360 / 2pi.
+
+ # (slope,aspect) = terrain_tools.ttf.calculate_slope_and_aspect(demns[:10,:10],res_array[:10,:10],res_array[:10,:10])
+ # aspect = aspect * 180.0/np.pi 
 
  # ezdev: compute sky view factor and terrain view factor
  # grid cell spacing for the DEM
  # dem_spacing = 30
- slope2, aspect2 = gradient_d8(demns, eares, eares)
+ # slope2, aspect2 = gradient_d8(np.flipud(demns), eares, eares, aspect_rad=False)
+ # slope2 =  np.flipud(slope2)
+ # aspect2 = np.flipud(aspect2) 
+ # aspect = aspect*180.0/np.pi
+
+
+ # slope2 = np.tan(slope2)
+ # aspect2 = aspect2 - 360
+ # aspect2 = aspect2*np.pi/180.0
  # print(demns)
+
+ # print('slope 1 = ', slope[3:7,3:7])
+ # print('slope 2 = ', slope2[3:7,3:7])
+ # print('aspect 1 = ', aspect[3:7,3:7])
+ # print('aspect 2 = ', aspect2[3:7,3:7])
+
+ # exit()
+ """
+ print(type(demns))
+ print(type(demns[0,0]))
  print(np.mean(demns))
  print(np.max(demns))
  print(np.min(demns))
@@ -354,11 +436,21 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  print( "eares size = ", np.shape(eares))
  print( "eares size = ", eares)
  print( np.sum(np.isnan(demns)))
+ print(np.sum(np.isinf(demns)))
+ """
  # svf, tvf = viewf(demns, spacing=eares, nangles = 16) # default nangles is 72
- svf = slope2
- tvf = aspect2
+ # svf = slope2
+ # tvf = aspect2
+ # svf, tvf = viewf(demns[:200, :200]*10, spacing=90, nangles=16)
+
+ svf, tvf = viewf( np.float64(demns), spacing = eares, nangles = 16)
+
+ 
+
+ print("svf mean = ", np.mean(svf))
+ print("tvf mean = ", np.mean(tvf))
  # svf, tvf = viewf(np.random.rand(np.shape(demns)[0], np.shape(demns)[1]), spacing=30, nangles = 16) # default nangles is 72
- sdelev = np.sqrt(slope**2) # placeholder - use this variable to compute some local roughness metric
+ sdelev = demns # placeholder - use this variable to compute some local roughness metric
 
  #Compute accumulated area
  m2 = np.copy(mask_all)
@@ -1237,6 +1329,12 @@ def Create_Clusters_And_Connections(workspace,wbd,output,input_dir,nhru,info,hyd
  OUTPUT['hand_org_map'] = hand_org
  OUTPUT['hband_map'] = hbands
 
+ # ezdev: export additional maps
+ # OUTPUT['svf_map'] = covariates['svf']
+ # OUTPUT['tvf_map'] = covariates['tvf']
+ # OUTPUT['slope_map'] = covariates['slope']
+ # OUTPUT['aspect_map'] = covariates['aspect']
+
  #Assign the model parameters
  print("Assigning the model parameters",flush=True)
  #Acumulate soil depths and convert to meters laura svp
@@ -1662,6 +1760,7 @@ def Postprocess_Input(rdir,edir,cids,rank,size,comm):
  os.system('rm -rf %s' % sdir)
  #Create cid, hru, and channel maps
  vars = ['cids','cids_org','dem','hrus','channels','hand','basins','basin_clusters']
+ # vars = ['cids','cids_org','dem','hrus','channels','hand','basins','basin_clusters', 'svf', 'tvf', 'slope', 'aspect']
  for var in vars:
   os.system('mkdir -p %s/postprocess/%s' % (edir,var))
  for cid in cids[rank::size]:

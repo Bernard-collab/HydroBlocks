@@ -1,6 +1,6 @@
 {
   "rdir": "/projects/ezorzetto@xsede.org/snow_experiment",
-  "experiment": "MSWX_3h_Snow_Project_pp",
+  "experiment": "MSWX_3h_Snow_Project_4_pp",
   "startdate": {
     "year": 2014,
     "month": 1,
@@ -121,13 +121,15 @@
   },
   "output": {
     "vars": [
-      "smc",
+      "totsmc",
       "swe",
       "snow_t",
       "snowh",
       "isnow",
       "fsno",
-      "qsnow"
+      "qsnow",
+      "t2mv",
+      "swdn"
       
     ],
     "routing_vars": [

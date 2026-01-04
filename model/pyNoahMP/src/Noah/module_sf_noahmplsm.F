@@ -947,6 +947,7 @@ contains
   REAL                          , INTENT(OUT) :: PRCP    !total precipitation [mm/s]     ! MB/AN : v3.7
   REAL                          , INTENT(OUT) :: SWDN_3D ! shortwave down total radiation, corrected for 3D effects (w/m2)
   REAL                          , INTENT(OUT) :: LWDN_3D ! longwave down total radiation, corrected for 3D effects (w/m2)
+                     
 
 !locals
 
@@ -954,9 +955,19 @@ contains
   REAL                                        :: PRCP_FROZEN   !total frozen precipitation [mm/s] ! MB/AN : v3.7
   REAL, PARAMETER                             :: RHO_GRPL = 500.0  ! graupel bulk density [kg/m3] ! MB/AN : v3.7
   REAL, PARAMETER                             :: RHO_HAIL = 917.0  ! hail bulk density [kg/m3]    ! MB/AN : v3.7
-  REAL                                        :: SW_REFL_DIR ! shortwave reflected direct [W/m2]
-  REAL                                        :: SW_REFL_DIF ! shortwave reflected diffuse [W/m2]
+  REAL, DIMENSION(       1:   2)              :: SW_REFL_DIR ! shortwave reflected direct [W/m2]
+  REAL, DIMENSION(       1:   2)              :: SW_REFL_DIF ! shortwave reflected diffuse [W/m2]
   REAL                                        :: LW_REFL ! longwave reflected [W/m2]
+  REAL                                        :: COS_INC ! cosine of solar incidence angle over tilted surface [-]
+  REAL                                        :: COS_INC_OVER_COSZ ! 
+  REAL                                        :: SLOPE_RAD ! local slope angle in radians [-]
+  REAL                                        :: SINZ ! sine of solar zenith angle [-]
+  LOGICAL                                     :: ISSHADE ! true if point is shaded, else false
+  REAL                                        :: X_ASPECT
+  REAL                                        :: Y_ASPECT
+  REAL                                        :: X_AZIMUTH
+  REAL                                        :: Y_AZIMUTH
+  REAL                                        :: COS_AZIM_ASPECT
 ! --------------------------------------------------------------------------------------------------
 
 !jref: seems like PAIR should be P1000mb??
@@ -983,27 +994,44 @@ contains
        SOLAI(1) = SWDOWN*0.3*0.5     ! diffuse vis
        SOLAI(2) = SWDOWN*0.3*0.5     ! diffuse nir
 
+       X_ASPECT = SIN(ASPECT)
+       Y_ASPECT = COS(ASPECT)
+       X_AZIMUTH = - SIN(AZIM)
+       Y_AZIMUTH = COS(AZIM)
+       ! COS(AZIM-ASPECT)= 
+       COS_AZIM_ASPECT = COS(ASPECT)*COS(AZIM) + SIN(ASPECT)*(- SIN(AZIM))
+       ! COS_AZIM_ASPECT = 1.0
 
-       ! ------------ EZDEV TODO: compute 3DRAD radiation correction here
-     IF(OPT_3DRAD == 1) THEN
-      ! write(*,*) 'USING PP RAD - OPTION 1'
-        ! do nothing - plane parallel radiation
-      LWDN_3D = LWDN
-      LW_REFL = 0.
-      SW_REFL_DIF = 0.
-      SW_REFL_DIR = 0.
-     ELSE IF(OPT_3DRAD == 2) THEN
-        ! standard 3D radiation correction
-        ! write(*,*) 'USING 3D RAD - OPTION 2'
-        SOLAI(1) = 0.75 * SOLAI(1) * ALBOLD / (ALBOLD + 0.01)
-        SOLAI(2) = 0.75 * SOLAI(2) * SVF
-        SOLAD(1) = 0.75 * SOLAD(1)
-        SOLAD(2) = 0.75 * SOLAD(2)
-        LWDN_3D = 0.75 * LWDN
-        LW_REFL = 0.1
-        SW_REFL_DIF = 0.1
-        SW_REFL_DIR = 0.1
-     ELSE IF(OPT_3DRAD == 2) THEN
+       ISSHADE = .false. ! todo: compute based on cosz, azi and horizon angle
+       SLOPE_RAD = max(0.0, ATAN(SLOPE)) ! slope input from geospatialtools is tangent = dz / dL
+       SINZ = SQRT(1-COSZ**2)
+       COS_INC = COSZ * COS(SLOPE_RAD) + SINZ * SIN(SLOPE_RAD)*COS_AZIM_ASPECT
+       COS_INC = min(max(COS_INC, -1.0), 1.0)
+       ! COS_INC_OVER_COSZ = max(min(3.0, COS_INC/COSZ), -3.0)
+       ! COS_INC_OVER_COSZ = 1.0
+       ! TVF = max(TVF, 0.)
+       ! SVF = min(max(SVF, 0.), 1.)
+
+       LWDN_3D = LWDN ! TODO: do it in Energy, needs to solve TRAD iteratively or at least a guess
+       LW_REFL = 0.
+       SW_REFL_DIF = 0.
+       SW_REFL_DIR = 0.
+       ! ------------ EZDEV compute 3DRAD radiation correction 
+     IF(OPT_3DRAD == 2) THEN ! standard option 3drad
+
+      SW_REFL_DIF = ALBOLD * SOLAI * TVF ! TODO: do it by band in ENERGY, use [current] albedo by band
+      SW_REFL_DIR = ALBOLD * SOLAD * TVF
+
+
+      IF (ISSHADE) THEN
+        SOLAD = SW_REFL_DIR
+      ELSE
+        SOLAD = SOLAD * COS_INC_OVER_COSZ  + SW_REFL_DIR
+      ENDIF
+      SOLAI = SOLAI * SVF + SW_REFL_DIF
+
+
+     ELSE IF(OPT_3DRAD == 3) THEN
       ! write(*,*) 'USING 3D RAD - OPTION 3'
       ! new 3D radiation correction
       SOLAI(1) = 1.25 * SOLAI(1) * ALBOLD / (ALBOLD + 0.01)
