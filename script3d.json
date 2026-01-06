@@ -20,9 +20,11 @@
   "hmc_parameters": {
     "number_of_characteristic_subbasins": 10,
     "average_height_difference_between_bands": 50,
-    "number_of_intraband_clusters": 10,
+    "number_of_intraband_clusters": 50,
     "subbasin_clustering_covariates": [
       "dem",
+      "x_aspect",
+      "y_aspect",
       "lats",
       "lons"
     ],

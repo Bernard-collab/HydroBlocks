@@ -311,7 +311,7 @@ class HydroBlocks:
           'lfmass','rtmass','stmass','wood','stblcp','fastcp','tauss','t2mv','t2mb','q2mv',\
           'q2mb','trad','nee','gpp','npp','fvegmp','runsf','runsb','ecan','etran','esoil','fsa','fira',\
           'apar','psn','sav','sag','rssun','rssha','swdn_3d','lwdn_3d','bgap','wgap','tgv','tgb','chv','chb','irc','irg','shc',\
-          'shg','evg','ghv','irb','shb','evb','ghb','tr','evc','chleaf','chuc','chv2','chb2','cosz','azimuth','lat',\
+          'shg','evg','ghv','irb','shb','evb','ghb','tr','evc','chleaf','chuc','chv2','chb2','cosz','azimuth','swdn_toa','lat',\
           'lon','fveg','fvgmax','fpice','fcev','fgev','fctr','qsnbot',\
           'foln','smcmax','smcdry','smcref','errwat','zwt0','minzwt',\
           'mozb','fvb','mozv','fvv','zpd','zpdg','tauxb','tauyb','tauxv','tauyv','sfcheadrt',\
@@ -935,7 +935,7 @@ class HydroBlocks:
   # Update NOAH
   n = self.noahmp
   n.update(n.z_ml,n.dt,n.lwdn,n.swdn,n.u_ml,n.v_ml,n.q_ml,n.t_ml,n.prcp,n.psfc,\
-           n.nowdate,n.xlat,n.xlon,n.cosz,n.azimuth, n.xsvf, n.xtvf, n.xslope, n.xaspect, n.xsdelev, n.julian,\
+           n.nowdate,n.xlat,n.xlon,n.cosz,n.azimuth, n.xsvf, n.xtvf, n.xslope, n.xaspect, n.xsdelev, n.swdn_toa, n.julian,\
            n.itime,n.year,\
            n.dzs,n.dx,\
            n.ivgtyp,n.isltyp,n.fvegmp,n.fvgmax,n.tmn,\
@@ -1252,6 +1252,7 @@ class HydroBlocks:
   tmp['emissi'] = np.copy(NOAH.emiss) 
   tmp['cosz'] = np.copy(NOAH.cosz) 
   tmp['azimuth'] = np.copy(NOAH.azimuth) 
+  tmp['swdn_toa'] = np.copy(NOAH.swdn_toa) 
   tmp['zwt'] = np.copy(NOAH.zwt) #m
   tmp['swe'] = np.copy(NOAH.snow) #m
   tmp['totsmc'] = np.sum(NOAH.sldpth*NOAH.smois,axis=1)/np.sum(NOAH.sldpth[0]) #m3/m3
@@ -1470,6 +1471,7 @@ class HydroBlocks:
              'emissi':{'description':'Land surface albedo','units':' ','dims':('time','hru',),'precision':4},
              'cosz':{'description':'Cosine of solar zenith angle','units':' ','dims':('time','hru',),'precision':4},
              'azimuth':{'description':'Solar azimuth angle','units':' ','dims':('time','hru',),'precision':4},
+             'swdn_toa':{'description':'Solar shortwave radiation down at TOA','units':'W/m2','dims':('time','hru',),'precision':4},
              'qbase':{'description':'Excess runoff','units':'mm/s','dims':('time','hru',),'precision':4},
              'udrunoff':{'description':'Accumulated baseflow','units':'mm','dims':('time','hru',),'precision':4},
              'sfcrunoff':{'description':'Accumulated surface','units':'mm','dims':('time','hru',),'precision':4},

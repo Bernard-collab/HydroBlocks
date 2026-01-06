@@ -58,3 +58,6 @@ For postprocessing, use this env where i fixed matplotlib - broken for some reas
 ```
 conda activate HBPP2
 ```
+
+Note: for some postproc did not work with env HB.
+I created HBPP3 for postprocessing with only needed packages, and copied gdal_tools from geospatial tools as I could not install it here.

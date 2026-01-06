@@ -9,7 +9,7 @@ MODULE module_sf_noahmpdrv
 !
 CONTAINS
 !
-  SUBROUTINE noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH, XSVF, XTVF, XSLOPE, XASPECT, XSDELEV,XLAT,XLONG, & ! IN : Time/Space-related
+  SUBROUTINE noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH, XSVF, XTVF, XSLOPE, XASPECT, XSDELEV, XSWDN_TOA, XLAT,XLONG, & ! IN : Time/Space-related
                   DZ8W,       DT,       DZS,    NSOIL,       DX,            & ! IN : Model configuration 
 	        IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN,            & ! IN : Vegetation/Soil characteristics
 		 XLAND,     XICE,XICE_THRES,  CROPCAT,                      & ! IN : Vegetation/Soil characteristics
@@ -73,6 +73,7 @@ CONTAINS
     REAL,                                            INTENT(IN   ) ::  JULIAN    ! Julian day
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  COSZIN    ! cosine zenith angle
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  AZIMUTH   ! solar azimuth angle
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XSWDN_TOA   ! top of atmosphere shortwave radiation (w/m2)
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XSVF ! sky view factor [-]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XTVF ! terrain view factor[-]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XSLOPE ! topo slope [-]
@@ -289,6 +290,7 @@ CONTAINS
 
     REAL                                :: COSZ         ! cosine zenith angle
     REAL                                :: AZIM         ! solar azimuth angle
+    REAL                                :: SWDN_TOA     ! top of atmosphere shortwave radiation (w/m2)
     REAL                                :: LAT          ! latitude [rad]
     REAL                                :: SVF          ! 
     REAL                                :: TVF          ! 
@@ -566,6 +568,7 @@ CONTAINS
 
        COSZ   = COSZIN  (I,J)                         ! cos zenith angle []
        AZIM  = AZIMUTH  (I,J)                         ! sol azimuth angle, ezdev
+       SWDN_TOA  = XSWDN_TOA  (I,J)                  ! top of atmosphere shortwave radiation (w/m2)
        LAT    = XLAT  (I,J)                           ! latitude [rad]
        SVF    = XSVF  (I,J)                           ! sky view factor []
        TVF    = XTVF  (I,J)                           ! terrain view factor []
@@ -895,7 +898,7 @@ CONTAINS
     ELSE
          ICE=0                              ! Neither sea ice or land ice.
          CALL NOAHMP_SFLX (parameters, &
-            I       , J       , LAT     , YEARLEN , JULIAN  , COSZ,   AZIM , SVF, TVF, SLOPE, ASPECT, SDELEV,& ! IN : Time/Space-related
+            I       , J       , LAT     , YEARLEN , JULIAN  , COSZ,   AZIM , SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA, & ! IN : Time/Space-related
             DT      , DX      , DZ8W1D  , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
             FVEG    , FVGMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
             SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics

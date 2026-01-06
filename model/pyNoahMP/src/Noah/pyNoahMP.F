@@ -500,7 +500,7 @@ end subroutine
 
 
 subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
-                  nowdate,xlat,xlong,coszin,azimuth, xsvf, xtvf, xslope, xaspect, xsdelev, julian,nhru,&
+                  nowdate,xlat,xlong,coszin,azimuth, xsvf, xtvf, xslope, xaspect, xsdelev, xswdn_toa, julian,nhru,&
                   ITIMESTEP,        YR,   &
                   DZS,    NSOIL,       DX,&
                   IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN, &
@@ -566,6 +566,7 @@ subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
  real,dimension(nhru),intent(in) :: xsvf, xtvf, xslope, xaspect, xsdelev
  real,dimension(nhru),intent(inout) :: coszin
  real,dimension(nhru),intent(inout) :: azimuth ! ezdev added
+ real,dimension(nhru),intent(inout) :: xswdn_toa ! ezdev added
  real,intent(in) :: zlvl,dt
  real,intent(inout) :: julian
  CHARACTER(LEN=19), INTENT(IN)  :: NOWDATE
@@ -980,7 +981,7 @@ kte = 2
       !IF(SF_URBAN_PHYSICS == 0) THEN
       !  CALL CALC_DECLIN(NOWDATE,XLAT(I), XLONG(I),COSZEN(I),JULIAN)
       !ELSE
-        CALL CALC_DECLIN(NOWDATE,XLAT(I), XLONG(I),COSZIN(I),AZIMUTH(I), JULIAN, DT, &
+        CALL CALC_DECLIN(NOWDATE,XLAT(I), XLONG(I),COSZIN(I),AZIMUTH(I), XSWDN_TOA(I), JULIAN, DT, &
                          HRANG(I), DECLIN, GMT, JULDAY)
       !ENDIF
     enddo
@@ -992,6 +993,7 @@ if (debug_flag)then
     print*,'JULIAN',JULIAN
     print*,'COSZEN',COSZIN
     print*,'AZIMUTH',AZIMUTH
+    print*,'XSWDN_TOA',XSWDN_TOA
     print*,'XLAT',XLAT
     print*,'XLONG',XLONG
     print*,'DZ8W',DZ8W
@@ -1179,7 +1181,7 @@ endif
     !print*,'PSISAT_3D',PSISAT_3D
     !print*,'QUARTZ_3D',QUARTZ_3D
 
-  call noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH,XSVF, XTVF, XSLOPE, XASPECT, XSDELEV, XLAT,XLONG, & ! IN : Time/Space-related
+  call noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH,XSVF, XTVF, XSLOPE, XASPECT, XSDELEV, XSWDN_TOA, XLAT,XLONG, & ! IN : Time/Space-related
                   DZ8W,       DT,       DZS,    NSOIL,       DX,            & ! IN : Model configuration 
 	        IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN,            & ! IN : Vegetation/Soil characteristics
 		 XLAND,     XICE,XICE_THRES,  CROPCAT,                      & ! IN : Vegetation/Soil characteristics
@@ -1230,6 +1232,7 @@ if (debug_flag)then
     print*,'JULIAN',JULIAN
     print*,'COSZEN',COSZIN
     print*,'AZIMUTH',AZIMUTH
+    print*,'XSWDN_TOA',XSWDN_TOA
     print*,'XLAT',XLAT
     print*,'XLONG',XLONG
     print*,'XSVF',XSVF
@@ -1790,7 +1793,7 @@ end subroutine
 
 !------------------------------------------------------------------------------------
 
-SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, AZIMUTH, JULIAN, DT, &
+SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, AZIMUTH, SWDN_TOA, JULIAN, DT, &
                          HRANG_OUT, DECLIN_OUT, GMT_OUT, JULDAY_OUT )
 
   USE MODULE_DATE_UTILITIES
@@ -1805,6 +1808,7 @@ SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, AZIMUTH, JULIAN, DT
    REAL,              INTENT(IN) :: DT ! MODEL TIME STEP [s] - EZDEV ADDED
    REAL,              INTENT(OUT) :: COSZ
    REAL,              INTENT(OUT) :: AZIMUTH ! EZDEV ADDED
+   REAL,              INTENT(OUT) :: SWDN_TOA ! EZDEV ADDED
    REAL,              INTENT(OUT) :: JULIAN
    !REAL,    OPTIONAL, INTENT(OUT) :: HRANG_OUT
    !REAL,    OPTIONAL, INTENT(OUT) :: DECLIN_OUT
@@ -1828,6 +1832,7 @@ SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, AZIMUTH, JULIAN, DT
    INTEGER                        :: IHOUR
    INTEGER                        :: IMINUTE
    INTEGER                        :: ISECOND
+   INTEGER                        :: DR_DIST ! effect of sun-Earth distance on SWDN_TOA
 
    REAL, PARAMETER :: DEGRAD = 3.14159265/180.
    REAL, PARAMETER :: DPD    = 360./365.
@@ -1863,7 +1868,8 @@ SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, AZIMUTH, JULIAN, DT
    HRANG=15.*(TLOCTIM-12.)*DEGRAD
    COSZ=SIN(LATITUDE*DEGRAD)*SIN(DECLIN)+COS(LATITUDE*DEGRAD)*COS(DECLIN)*COS(HRANG)
 
-   
+   DR_DIST = 1.0 + 0.033 * COS(2.0 * 3.14159265 * IDAY / 365.0)
+   SWDN_TOA = 1361.*DR_DIST*DR_DIST*COSZ
 
    ! USE OTHER METHOD FOR AZI
    ! SINZ = SQRT(1.0-COSZ*COSZ)

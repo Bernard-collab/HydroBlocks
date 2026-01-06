@@ -389,7 +389,7 @@ contains
 !== begin noahmp_sflx ==============================================================================
 
   SUBROUTINE NOAHMP_SFLX (parameters, &
-                   ILOC    , JLOC    , LAT     , YEARLEN , JULIAN  , COSZ, AZIM, SVF, TVF, SLOPE, ASPECT, SDELEV     , & ! IN : Time/Space-related
+                   ILOC    , JLOC    , LAT     , YEARLEN , JULIAN  , COSZ, AZIM, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA     , & ! IN : Time/Space-related
                    DT      , DX      , DZ8W    , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
                    SHDFAC  , SHDMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
                    SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics
@@ -460,6 +460,7 @@ contains
   REAL                          , INTENT(IN)     :: SLOPE ! topo slope [-]
   REAL                          , INTENT(IN)     :: ASPECT ! topo aspect [-]
   REAL                          , INTENT(IN)     :: SDELEV ! elevation standard deviation [m]
+  REAL                          , INTENT(IN)     :: SWDN_TOA ! downward shortwave radiation at the top of atmosphere [W/m2]
   REAL                           , INTENT(IN)    :: TBOT   !bottom condition for soil temp. [K]
   REAL                           , INTENT(IN)    :: FOLN   !foliage nitrogen (%) [1-saturated]
   REAL                           , INTENT(IN)    :: SHDFAC !green vegetation fraction [0.0-1.0]
@@ -707,7 +708,7 @@ contains
 
    CALL ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                            &
              PRCPCONV, PRCPNONC,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL, &
-             SOLDN   ,LWDN, COSZ     ,   AZIM,   ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_3D, LWDN_3D, &
+             SOLDN   ,LWDN, COSZ     ,   AZIM,   ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA, SWDN_3D, LWDN_3D, &
               THAIR   ,QAIR    ,                   & 
              EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   ,SOLAI   , &
              SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      ,FPICE   , PRCP )     
@@ -897,7 +898,7 @@ contains
 
   SUBROUTINE ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                             &
                   PRCPCONV,PRCPNONC ,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL , &
-                  SOLDN   ,LWDN, COSZ, AZIM, ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV     ,SWDN_3D, LWDN_3D, THAIR   ,QAIR    ,                    & 
+                  SOLDN   ,LWDN, COSZ, AZIM, ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA     ,SWDN_3D, LWDN_3D, THAIR   ,QAIR    ,                    & 
                   EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   , SOLAI   , &
 		  SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      , FPICE   ,PRCP )     
 ! --------------------------------------------------------------------------------------------------
@@ -927,6 +928,7 @@ contains
   REAL                          , INTENT(IN)  :: SLOPE ! topo slope [-]
   REAL                          , INTENT(IN)  :: ASPECT ! topo aspect [-]
   REAL                          , INTENT(IN)  :: SDELEV ! elevation standard deviation [m]
+  REAL                          , INTENT(IN)  :: SWDN_TOA ! downward shortwave radiation at the top of atmosphere [W/m2]
 
 ! outputs
 
@@ -969,6 +971,9 @@ contains
   REAL                                        :: X_AZIMUTH
   REAL                                        :: Y_AZIMUTH
   REAL                                        :: COS_AZIM_ASPECT
+  REAL                                        :: KT_PARTITION
+  REAL                                        :: DIFFUSE_FRAC
+  REAL                                        :: VIS_FRACTION
 ! --------------------------------------------------------------------------------------------------
 
 !jref: seems like PAIR should be P1000mb??
@@ -986,14 +991,22 @@ contains
           SWDOWN = SOLDN
        END IF 
 
+       ! EZDEV:: DIRECT-DIFFUSE APRTITIONING FOLLOWING RUIZ-ARIAS ET AL (2010):
+       KT_PARTITION = min(SWDOWN/SWDN_TOA, 1.0)
+       DIFFUSE_FRAC = 0.952 - 1.041*EXP(-EXP(2.300-4.702*KT_PARTITION))
+
+       VIS_FRACTION = 0.5
+
+       SOLAD(1) = SWDOWN*(1.-DIFFUSE_FRAC)*VIS_FRACTION         ! direct  vis
+       SOLAD(2) = SWDOWN*(1.-DIFFUSE_FRAC)*(1.-VIS_FRACTION)    ! direct  nir
+       SOLAI(1) = SWDOWN*DIFFUSE_FRAC*VIS_FRACTION              ! diffuse vis
+       SOLAI(2) = SWDOWN*DIFFUSE_FRAC*(1.-VIS_FRACTION)         ! diffuse nir
        
 
-
-       ! EZDEV TODO: improve this partitioning
-       SOLAD(1) = SWDOWN*0.7*0.5     ! direct  vis
-       SOLAD(2) = SWDOWN*0.7*0.5     ! direct  nir
-       SOLAI(1) = SWDOWN*0.3*0.5     ! diffuse vis
-       SOLAI(2) = SWDOWN*0.3*0.5     ! diffuse nir
+       ! SOLAD(1) = SWDOWN*0.7*0.5     ! direct  vis
+       ! SOLAD(2) = SWDOWN*0.7*0.5     ! direct  nir
+       ! SOLAI(1) = SWDOWN*0.3*0.5     ! diffuse vis
+       ! SOLAI(2) = SWDOWN*0.3*0.5     ! diffuse nir
 
        X_ASPECT = SIN(ASPECT)
        Y_ASPECT = COS(ASPECT)
@@ -1006,7 +1019,7 @@ contains
 
        ISSHADE = .false. ! todo: compute based on cosz, azi and horizon angle
        SLOPE_RAD = max(0.0, ATAN(SLOPE)) ! slope input from geospatialtools is tangent = dz / dL
-       SINZ = SQRT(1-COSZ**2)
+       SINZ = SQRT(1-COSZ*COSZ)
        COS_INC = COSZ * COS(SLOPE_RAD) + SINZ * SIN(SLOPE_RAD)*COS_AZIM_ASPECT
        COS_INC = min(max(COS_INC, -1.0), 1.0)
        ! COSZ_TMP = COSZ
