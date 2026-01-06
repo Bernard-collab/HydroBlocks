@@ -962,6 +962,7 @@ contains
   REAL                                        :: COS_INC_OVER_COSZ ! 
   REAL                                        :: SLOPE_RAD ! local slope angle in radians [-]
   REAL                                        :: SINZ ! sine of solar zenith angle [-]
+  REAL                                        :: COSZ_TMP ! sine of solar zenith angle [-]
   LOGICAL                                     :: ISSHADE ! true if point is shaded, else false
   REAL                                        :: X_ASPECT
   REAL                                        :: Y_ASPECT
@@ -996,10 +997,11 @@ contains
 
        X_ASPECT = SIN(ASPECT)
        Y_ASPECT = COS(ASPECT)
-       X_AZIMUTH = - SIN(AZIM)
+       X_AZIMUTH = SIN(AZIM)
        Y_AZIMUTH = COS(AZIM)
        ! COS(AZIM-ASPECT)= 
-       COS_AZIM_ASPECT = COS(ASPECT)*COS(AZIM) + SIN(ASPECT)*(- SIN(AZIM))
+       ! COS_AZIM_ASPECT = -COS(ASPECT)*COS(AZIM) + SIN(ASPECT)*SIN(AZIM)
+       COS_AZIM_ASPECT = COS(ASPECT)*COS(AZIM) + SIN(ASPECT)*SIN(AZIM)
        ! COS_AZIM_ASPECT = 1.0
 
        ISSHADE = .false. ! todo: compute based on cosz, azi and horizon angle
@@ -1007,8 +1009,11 @@ contains
        SINZ = SQRT(1-COSZ**2)
        COS_INC = COSZ * COS(SLOPE_RAD) + SINZ * SIN(SLOPE_RAD)*COS_AZIM_ASPECT
        COS_INC = min(max(COS_INC, -1.0), 1.0)
-       ! COS_INC_OVER_COSZ = COS_INC/COSZ
-       ! COS_INC_OVER_COSZ = max(min(10.0, COS_INC/COSZ), 0.0)
+       ! COSZ_TMP = COSZ
+       COSZ_TMP = min(max(COSZ, 0.001), 1.0)
+       ! COS_INC_OVER_COSZ = COS_INC/COSZ_TMP
+       COS_INC_OVER_COSZ = min(10.0, COS_INC/COSZ)
+       ! COS_INC_OVER_COSZ = min(10.0, max(COS_INC/COSZ, 0.0))
        ! COS_INC_OVER_COSZ = 1.0
        ! TVF = max(TVF, 0.)
        ! SVF = min(max(SVF, 0.), 1.)
@@ -1018,20 +1023,24 @@ contains
        SW_REFL_DIF = 0.
        SW_REFL_DIR = 0.
        ! ------------ EZDEV compute 3DRAD radiation correction 
-     IF(OPT_3DRAD == 2) THEN ! standard option 3drad
+     IF( (OPT_3DRAD == 2).and.(COSZ > 0.001)) THEN ! standard option 3drad
 
-      SW_REFL_DIF = ALBOLD * SOLAI * TVF ! TODO: do it by band in ENERGY, use [current] albedo by band
-      SW_REFL_DIR = ALBOLD * SOLAD * TVF
+      ! SW_REFL_DIF = ALBOLD * SOLAI * TVF ! TODO: do it by band in ENERGY, use [current] albedo by band
+      ! SW_REFL_DIR = ALBOLD * SOLAD * TVF
 
 
       IF (ISSHADE) THEN ! cast shade
         SOLAD = SW_REFL_DIR
-      ELSE IF (COS_INC < 0.0) THEN ! self shade
+      ELSE IF ( COS_INC < 0.0) THEN ! self shade
         SOLAD = SW_REFL_DIR
       ELSE
-        SOLAD = SOLAD * COS_INC_OVER_COSZ  + SW_REFL_DIR
+        ! SOLAD = SOLAD * COS_INC_OVER_COSZ  + SW_REFL_DIR
+        SOLAD = SOLAD * COS_INC_OVER_COSZ 
+        SOLAI = SOLAI * COS_INC_OVER_COSZ  
       ENDIF
-      SOLAI = SOLAI * SVF + SW_REFL_DIF
+      ! SOLAI = SOLAI * SVF + SW_REFL_DIF
+      ! SOLAD = SOLAD * SVF + SW_REFL_DIF
+ 
 
 
      ELSE IF(OPT_3DRAD == 3) THEN

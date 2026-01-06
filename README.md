@@ -34,3 +34,27 @@ pip install psutil
 python setup.py 
 ```
 
+**4. Using the code in Alpine.**
+
+```
+module load anaconda
+```
+
+```
+conda activate HB5
+```
+
+
+```
+./HB -m script3d.json -t cluster
+```
+
+```
+./HB -m script3d.json -t model
+```
+
+For postprocessing, use this env where i fixed matplotlib - broken for some reason
+
+```
+conda activate HBPP2
+```
