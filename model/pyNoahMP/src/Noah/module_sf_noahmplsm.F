@@ -982,6 +982,9 @@ contains
   REAL                                        :: VIS_FRACTION
   REAL                                        :: MY_HOR
   REAL                                        :: DANGLE
+  REAL                                        :: KAPPA
+  REAL                                        :: DELTA_SOLAD
+  REAL                                        :: DELTA_ELEV ! todo: read from data
 ! --------------------------------------------------------------------------------------------------
 
 !jref: seems like PAIR should be P1000mb??
@@ -1022,6 +1025,7 @@ contains
 
 
        ! EZDEV:: DIRECT-DIFFUSE APRTITIONING FOLLOWING RUIZ-ARIAS ET AL (2010):
+       ! TODO: read actual deltaz and do this with 3d topo correction below.
        KT_PARTITION = min(SWDOWN/SWDN_TOA, 1.0)
        DIFFUSE_FRAC = 0.952 - 1.041*EXP(-EXP(2.300-4.702*KT_PARTITION))
 
@@ -1031,7 +1035,17 @@ contains
        SOLAD(2) = SWDOWN*(1.-DIFFUSE_FRAC)*(1.-VIS_FRACTION)    ! direct  nir
        SOLAI(1) = SWDOWN*DIFFUSE_FRAC*VIS_FRACTION              ! diffuse vis
        SOLAI(2) = SWDOWN*DIFFUSE_FRAC*(1.-VIS_FRACTION)         ! diffuse nir
-       
+
+
+       ! CORRECT SW DIRECT BASED ON ELEVATION (RUIZ ET AL 2010; FIDDLES ANF GRUBER; 2021)
+      IF (KT_PARTITION > 0.65) THEN
+       DELTA_ELEV = 0.0 ! difference in elevation between this lcoation and mean cell -> read from data.
+       KAPPA = - COSZ * LOG( (SOLAD(1)+SOLAD(2))/SWDN_TOA)
+       DELTA_SOLAD = SOLAD(1)*(1.0 - EXP(-KAPPA*DELTA_ELEV*COSZ))
+       SOLAD(1) = SOLAD(1) + DELTA_SOLAD
+       DELTA_SOLAD = SOLAD(2)*(1.0 - EXP(-KAPPA*DELTA_ELEV*COSZ))
+       SOLAD(2) = SOLAD(2) + DELTA_SOLAD
+      ENDIF 
 
        ! SOLAD(1) = SWDOWN*0.7*0.5     ! direct  vis
        ! SOLAD(2) = SWDOWN*0.7*0.5     ! direct  nir
