@@ -9,7 +9,9 @@ MODULE module_sf_noahmpdrv
 !
 CONTAINS
 !
-  SUBROUTINE noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH, XSVF, XTVF, XSLOPE, XASPECT, XSDELEV, XSWDN_TOA, XLAT,XLONG, & ! IN : Time/Space-related
+  SUBROUTINE noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH, XSVF, XTVF, XSLOPE, XASPECT, XSDELEV, XSWDN_TOA, &
+    xhor_n, xhor_e, xhor_s, xhor_w, xhor_ne, xhor_se, xhor_sw, xhor_nw, &
+    XLAT,XLONG, & ! IN : Time/Space-related
                   DZ8W,       DT,       DZS,    NSOIL,       DX,            & ! IN : Model configuration 
 	        IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN,            & ! IN : Vegetation/Soil characteristics
 		 XLAND,     XICE,XICE_THRES,  CROPCAT,                      & ! IN : Vegetation/Soil characteristics
@@ -79,6 +81,7 @@ CONTAINS
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XSLOPE ! topo slope [-]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XASPECT ! topo aspect [-]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XSDELEV ! elevation standard deviation [m]
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  xhor_n, xhor_e, xhor_s, xhor_w, xhor_ne, xhor_se, xhor_sw, xhor_nw ! horizons
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XLAT      ! latitude [rad]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XLONG     ! latitude [rad]
     REAL,    DIMENSION( ims:ime, kms:kme, jms:jme ), INTENT(IN   ) ::  DZ8W      ! thickness of atmo layers [m]
@@ -297,6 +300,7 @@ CONTAINS
     REAL                                :: SLOPE        ! 
     REAL                                :: ASPECT       ! 
     REAL                                :: SDELEV       ! 
+    REAL                                :: hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw       ! horizons
     REAL                                :: Z_ML         ! model height [m]
     INTEGER                             :: VEGTYP       ! vegetation type
     INTEGER,    DIMENSION(NSOIL)        :: SOILTYP      ! soil type
@@ -575,6 +579,14 @@ CONTAINS
        SLOPE    = XSLOPE (I,J)                        ! terrain slope []
        ASPECT    = XASPECT  (I,J)                     ! terrain aspect []
        SDELEV    = XSDELEV  (I,J)                     ! standard deviation of elevation [m]
+       HOR_N    = XHOR_N  (I,J)                     ! horizon angles for 8 compass directions []
+       HOR_E    = XHOR_E  (I,J)                     ! horizon angles for 8 compass directions []
+       HOR_S    = XHOR_S  (I,J)                     ! horizon angles for 8 compass directions []
+       HOR_W    = XHOR_W  (I,J)                     ! horizon angles for 8 compass directions []
+       HOR_NE    = XHOR_NE  (I,J)                     ! horizon angles for 8 compass directions []
+       HOR_SE    = XHOR_SE  (I,J)                     ! horizon angles for 8 compass directions []
+       HOR_SW    = XHOR_SW  (I,J)                     ! horizon angles for 8 compass directions []
+       HOR_NW    = XHOR_NW  (I,J)                     ! horizon angles for 8 compass directions []
        Z_ML   = 0.5*DZ8W(I,1,J)                       ! DZ8W: thickness of full levels; ZLVL forcing height [m]
        VEGTYP = IVGTYP(I,J)                           ! vegetation type
        if(iopt_soil == 1) then
@@ -899,6 +911,7 @@ CONTAINS
          ICE=0                              ! Neither sea ice or land ice.
          CALL NOAHMP_SFLX (parameters, &
             I       , J       , LAT     , YEARLEN , JULIAN  , COSZ,   AZIM , SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA, & ! IN : Time/Space-related
+            hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw, & ! IN: horizon angles
             DT      , DX      , DZ8W1D  , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
             FVEG    , FVGMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
             SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics

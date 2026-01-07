@@ -390,6 +390,7 @@ contains
 
   SUBROUTINE NOAHMP_SFLX (parameters, &
                    ILOC    , JLOC    , LAT     , YEARLEN , JULIAN  , COSZ, AZIM, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA     , & ! IN : Time/Space-related
+                   hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw, & ! IN: horizon angles
                    DT      , DX      , DZ8W    , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
                    SHDFAC  , SHDMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
                    SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics
@@ -460,6 +461,7 @@ contains
   REAL                          , INTENT(IN)     :: SLOPE ! topo slope [-]
   REAL                          , INTENT(IN)     :: ASPECT ! topo aspect [-]
   REAL                          , INTENT(IN)     :: SDELEV ! elevation standard deviation [m]
+  REAL                          , INTENT(IN)     :: hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw  ! IN: horizon angles
   REAL                          , INTENT(IN)     :: SWDN_TOA ! downward shortwave radiation at the top of atmosphere [W/m2]
   REAL                           , INTENT(IN)    :: TBOT   !bottom condition for soil temp. [K]
   REAL                           , INTENT(IN)    :: FOLN   !foliage nitrogen (%) [1-saturated]
@@ -709,6 +711,7 @@ contains
    CALL ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                            &
              PRCPCONV, PRCPNONC,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL, &
              SOLDN   ,LWDN, COSZ     ,   AZIM,   ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA, SWDN_3D, LWDN_3D, &
+             hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw, & ! IN: horizon angles
               THAIR   ,QAIR    ,                   & 
              EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   ,SOLAI   , &
              SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      ,FPICE   , PRCP )     
@@ -898,7 +901,9 @@ contains
 
   SUBROUTINE ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                             &
                   PRCPCONV,PRCPNONC ,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL , &
-                  SOLDN   ,LWDN, COSZ, AZIM, ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA     ,SWDN_3D, LWDN_3D, THAIR   ,QAIR    ,                    & 
+                  SOLDN   ,LWDN, COSZ, AZIM, ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA     ,SWDN_3D, LWDN_3D, &
+                  hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw, & ! IN: horizon angles
+                  THAIR   ,QAIR    ,                    & 
                   EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   , SOLAI   , &
 		  SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      , FPICE   ,PRCP )     
 ! --------------------------------------------------------------------------------------------------
@@ -928,6 +933,7 @@ contains
   REAL                          , INTENT(IN)  :: SLOPE ! topo slope [-]
   REAL                          , INTENT(IN)  :: ASPECT ! topo aspect [-]
   REAL                          , INTENT(IN)  :: SDELEV ! elevation standard deviation [m]
+  REAL                          , INTENT(IN)  :: hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw  ! horizon angles
   REAL                          , INTENT(IN)  :: SWDN_TOA ! downward shortwave radiation at the top of atmosphere [W/m2]
 
 ! outputs
@@ -974,6 +980,8 @@ contains
   REAL                                        :: KT_PARTITION
   REAL                                        :: DIFFUSE_FRAC
   REAL                                        :: VIS_FRACTION
+  REAL                                        :: MY_HOR
+  REAL                                        :: DANGLE
 ! --------------------------------------------------------------------------------------------------
 
 !jref: seems like PAIR should be P1000mb??
@@ -990,6 +998,28 @@ contains
        ELSE
           SWDOWN = SOLDN
        END IF 
+
+       ! FIGURE OUT HORIZON IN CURRENT DIRECTION:
+       DANGLE = 45.0
+       IF ((ABS(AZIM))<DANGLE/2.0) THEN
+        MY_HOR = HOR_N
+       ELSE IF (AZIM < DANGLE/2.0 + DANGLE ) THEN
+        MY_HOR = HOR_NE
+       ELSE IF (AZIM < DANGLE/2.0 + 2.0*DANGLE ) THEN
+        MY_HOR = HOR_E
+       ELSE IF (AZIM < DANGLE/2.0 + 3.0*DANGLE ) THEN
+        MY_HOR = HOR_SE
+       ELSE IF (AZIM < DANGLE/2.0 + 4.0*DANGLE ) THEN
+        MY_HOR = HOR_S
+       ELSE IF (AZIM < DANGLE/2.0 + 5.0*DANGLE ) THEN
+        MY_HOR = HOR_SW
+       ELSE IF (AZIM < DANGLE/2.0 + 6.0*DANGLE ) THEN
+        MY_HOR = HOR_W
+      ELSE IF (AZIM < DANGLE/2.0 + 7.0*DANGLE ) THEN
+        MY_HOR = HOR_NW
+       ENDIF
+
+
 
        ! EZDEV:: DIRECT-DIFFUSE APRTITIONING FOLLOWING RUIZ-ARIAS ET AL (2010):
        KT_PARTITION = min(SWDOWN/SWDN_TOA, 1.0)
@@ -1017,7 +1047,7 @@ contains
        COS_AZIM_ASPECT = COS(ASPECT)*COS(AZIM) + SIN(ASPECT)*SIN(AZIM)
        ! COS_AZIM_ASPECT = 1.0
 
-       ISSHADE = .false. ! todo: compute based on cosz, azi and horizon angle
+       
        SLOPE_RAD = max(0.0, ATAN(SLOPE)) ! slope input from geospatialtools is tangent = dz / dL
        SINZ = SQRT(1-COSZ*COSZ)
        COS_INC = COSZ * COS(SLOPE_RAD) + SINZ * SIN(SLOPE_RAD)*COS_AZIM_ASPECT
@@ -1030,6 +1060,14 @@ contains
        ! COS_INC_OVER_COSZ = 1.0
        ! TVF = max(TVF, 0.)
        ! SVF = min(max(SVF, 0.), 1.)
+
+       ISSHADE = .false. ! for starters, let there be light
+       IF (MY_HOR > COSZ) THEN
+        ISSHADE = .true. ! CAST SHADE.
+       ENDIF
+       IF (COS_INC < 0.0) THEN
+        ISSHADE = .true. ! SLOPE SELF SHADE.
+       ENDIF
 
        LWDN_3D = LWDN ! TODO: do it in Energy, needs to solve TRAD iteratively or at least a guess
        LW_REFL = 0.
@@ -1044,9 +1082,7 @@ contains
 
       IF (ISSHADE) THEN ! cast shade
         SOLAD = SW_REFL_DIR
-      ELSE IF ( COS_INC < 0.0) THEN ! self shade
-        SOLAD = SW_REFL_DIR
-      ELSE
+      ELSE ! no shade
         ! SOLAD = SOLAD * COS_INC_OVER_COSZ  + SW_REFL_DIR
         SOLAD = SOLAD * COS_INC_OVER_COSZ 
         SOLAI = SOLAI * COS_INC_OVER_COSZ  

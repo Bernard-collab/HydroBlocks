@@ -274,6 +274,19 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  metadata['nodata'] = -9999.0
  gdal_tools.write_raster(file_ca,metadata,dem_map)
 
+ #Write out the hor_w map
+ hor_w_map = np.copy(covariates['hor_w'])
+ hor_w_map[np.isnan(hor_w_map) == 1] = -9999.0
+ file_ca = '%s/hor_w_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,hor_w_map)
+
+  #Write out the hor_n map
+ hor_n_map = np.copy(covariates['hor_n'])
+ hor_n_map[np.isnan(hor_n_map) == 1] = -9999.0
+ file_ca = '%s/hor_n_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,hor_n_map)
  
 
  #Write the connection matrices
@@ -329,6 +342,7 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
         'WLTSMC','MAXSMC','DRYSMC','REFSMC','SATDK',
         'm','hand','y_aspect','x_aspect','hru','hband',
         'svf', 'tvf', 'aspect', 'sdelev',
+        'hor_n', 'hor_e', 'hor_s', 'hor_w', 'hor_ne', 'hor_se', 'hor_sw', 'hor_nw',
         'lats','lons']
 
  #if hydroblocks_info['water_management']['hwu_agric_flag']:
@@ -336,7 +350,7 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  #   vars.append(var)
 
  for var in vars:
-  if var in ['slope','area_pct','land_cover','channel','dem','soil_texture_class','ti','carea','area','F11','clay','m','hand','y_aspect','x_aspect','svf','tvf','aspect','sdelev','hru','hband','lats','lons']: #laura svp
+  if var in ['slope','area_pct','land_cover','channel','dem','soil_texture_class','ti','carea','area','F11','clay','m','hand','y_aspect','x_aspect','svf','tvf','aspect','sdelev','hor_n', 'hor_e', 'hor_s', 'hor_w', 'hor_ne', 'hor_se', 'hor_sw', 'hor_nw','hru','hband','lats','lons']: #laura svp
    grp.createVariable(var,'f4',('hru',))#,zlib=True)
    grp.variables[var][:] = data['parameters']['hru'][var] #laura svp
   else: #laura svp
@@ -396,9 +410,18 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  # ezdev note: geospatial tools computes slope as a tangent, and aspect in rad. 
  # South=0, East=pi/2, up to pi, West -pi/2 up to -pi (North = -pi/2 and pi/2)
 
- # compute horizons for a given azimuth
- myazi = 0.0
- myhor = horizon(myazi, np.float64(demns), eares)
+ # compute horizons for a given azimuth. From topocalc documentation:
+ # The coordinate system for the azimuth is 0 degrees is South,
+ #   with positive angles through East and negative values
+ #   through West. Azimuth values must be on the -180 -> 0 -> 180 range.
+ hor_n = horizon(180.0, np.float64(demns), eares)
+ hor_ne = horizon(135.0, np.float64(demns), eares)
+ hor_e = horizon(90.0, np.float64(demns), eares)
+ hor_se = horizon(45.0, np.float64(demns), eares)
+ hor_s = horizon(0.0, np.float64(demns), eares)
+ hor_sw = horizon(-45.0, np.float64(demns), eares)
+ hor_w = horizon(-90.0, np.float64(demns), eares)
+ hor_nw = horizon(-135.0, np.float64(demns), eares)
 
  # ezdev note: topocalc computes slope as angle in radians
  # and aspect as angle in deg [option for radians] start o at North and increases clockwise to 360 / 2pi.
@@ -555,6 +578,14 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  svf[mask != 1] = -9999 # ezdev
  tvf[mask != 1] = -9999 # ezdev
  sdelev[mask != 1] = -9999 # ezdev
+ hor_n[mask != 1] = -9999 # ezdev
+ hor_e[mask != 1] = -9999 # ezdev
+ hor_s[mask != 1] = -9999 # ezdev
+ hor_w[mask != 1] = -9999 # ezdev
+ hor_ne[mask != 1] = -9999 # ezdev
+ hor_se[mask != 1] = -9999 # ezdev
+ hor_sw[mask != 1] = -9999 # ezdev
+ hor_nw[mask != 1] = -9999 # ezdev
 
  # save covariates
  covariates['slope'] = slope
@@ -562,6 +593,14 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  covariates['svf'] = svf
  covariates['tvf'] = tvf 
  covariates['sdelev'] = sdelev
+ covariates['hor_n'] = hor_n
+ covariates['hor_e'] = hor_e
+ covariates['hor_s'] = hor_s
+ covariates['hor_w'] = hor_w
+ covariates['hor_ne'] = hor_ne
+ covariates['hor_se'] = hor_se
+ covariates['hor_sw'] = hor_sw
+ covariates['hor_nw'] = hor_nw
  covariates['x_aspect'] = np.sin(aspect)
  covariates['y_aspect'] = np.cos(aspect)
  covariates['carea'] = area_all_cp#area
@@ -927,7 +966,7 @@ def Assign_Parameters_Semidistributed_svp(covariates,metadata,hydroblocks_info,O
  #Initialize the arrays
  vars = ['area','area_pct','F11','slope','dem','carea','channel',
          'land_cover','soil_texture_class','clay','sand','silt',
-         'm','hand','x_aspect','y_aspect','hru','hband','lats','lons','svf', 'tvf', 'aspect', 'sdelev'] #laura svp
+         'm','hand','x_aspect','y_aspect','hru','hband','lats','lons','svf', 'tvf', 'aspect', 'sdelev', 'hor_n', 'hor_e', 'hor_s', 'hor_w', 'hor_ne', 'hor_se', 'hor_sw', 'hor_nw'] #laura svp
 
  vars_s = ['BB','DRYSMC','MAXSMC','REFSMC','SATPSI','SATDK','SATDW','WLTSMC',                 'QTZ'] #laura svp
 
@@ -982,6 +1021,14 @@ def Assign_Parameters_Semidistributed_svp(covariates,metadata,hydroblocks_info,O
   OUTPUT['parameters']['hru']['tvf'][hru] = np.nanmean(covariates['tvf'][idx])
   OUTPUT['parameters']['hru']['sdelev'][hru] = np.nanmean(covariates['sdelev'][idx])
   OUTPUT['parameters']['hru']['aspect'][hru] = np.nanmean(covariates['aspect'][idx])
+  OUTPUT['parameters']['hru']['hor_n'][hru] = np.nanmean(covariates['hor_n'][idx])
+  OUTPUT['parameters']['hru']['hor_e'][hru] = np.nanmean(covariates['hor_e'][idx])
+  OUTPUT['parameters']['hru']['hor_s'][hru] = np.nanmean(covariates['hor_s'][idx])
+  OUTPUT['parameters']['hru']['hor_w'][hru] = np.nanmean(covariates['hor_w'][idx])
+  OUTPUT['parameters']['hru']['hor_nw'][hru] = np.nanmean(covariates['hor_nw'][idx])
+  OUTPUT['parameters']['hru']['hor_sw'][hru] = np.nanmean(covariates['hor_sw'][idx])
+  OUTPUT['parameters']['hru']['hor_se'][hru] = np.nanmean(covariates['hor_se'][idx])
+  OUTPUT['parameters']['hru']['hor_ne'][hru] = np.nanmean(covariates['hor_ne'][idx])
   #Average geographic coordinates
   OUTPUT['parameters']['hru']['lats'][hru] = np.nanmean(covariates['lats'][idx])
   OUTPUT['parameters']['hru']['lons'][hru] = np.nanmean(covariates['lons'][idx])

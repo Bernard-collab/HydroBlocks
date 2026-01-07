@@ -500,7 +500,9 @@ end subroutine
 
 
 subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
-                  nowdate,xlat,xlong,coszin,azimuth, xsvf, xtvf, xslope, xaspect, xsdelev, xswdn_toa, julian,nhru,&
+                  nowdate,xlat,xlong,coszin,azimuth, xsvf, xtvf, xslope, xaspect, xsdelev, xswdn_toa, &
+                  xhor_n, xhor_e, xhor_s, xhor_w, xhor_ne, xhor_se, xhor_sw, xhor_nw, &
+                  julian,nhru,&
                   ITIMESTEP,        YR,   &
                   DZS,    NSOIL,       DX,&
                   IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN, &
@@ -564,6 +566,7 @@ subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
  real,dimension(nhru),intent(in) :: lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc
  real,dimension(nhru),intent(in) :: xlat,xlong
  real,dimension(nhru),intent(in) :: xsvf, xtvf, xslope, xaspect, xsdelev
+ real,dimension(nhru),intent(in) :: xhor_n, xhor_e, xhor_s, xhor_w, xhor_ne, xhor_se, xhor_sw, xhor_nw
  real,dimension(nhru),intent(inout) :: coszin
  real,dimension(nhru),intent(inout) :: azimuth ! ezdev added
  real,dimension(nhru),intent(inout) :: xswdn_toa ! ezdev added
@@ -1181,7 +1184,8 @@ endif
     !print*,'PSISAT_3D',PSISAT_3D
     !print*,'QUARTZ_3D',QUARTZ_3D
 
-  call noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH,XSVF, XTVF, XSLOPE, XASPECT, XSDELEV, XSWDN_TOA, XLAT,XLONG, & ! IN : Time/Space-related
+  call noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH,XSVF, XTVF, XSLOPE, XASPECT, XSDELEV, XSWDN_TOA, &
+                  xhor_n, xhor_e, xhor_s, xhor_w, xhor_ne, xhor_se, xhor_sw, xhor_nw, XLAT,XLONG, & ! IN : Time/Space-related
                   DZ8W,       DT,       DZS,    NSOIL,       DX,            & ! IN : Model configuration 
 	        IVGTYP,   ISLTYP,    VEGFRA,   VEGMAX,      TMN,            & ! IN : Vegetation/Soil characteristics
 		 XLAND,     XICE,XICE_THRES,  CROPCAT,                      & ! IN : Vegetation/Soil characteristics

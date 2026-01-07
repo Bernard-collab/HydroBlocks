@@ -316,6 +316,7 @@ class HydroBlocks:
           'foln','smcmax','smcdry','smcref','errwat','zwt0','minzwt',\
           'mozb','fvb','mozv','fvv','zpd','zpdg','tauxb','tauyb','tauxv','tauyv','sfcheadrt',\
           'snow','snowh','canwat','xlat','xlon','tsk','tmn','xice','sai','lai','grain','xsvf', 'xtvf', 'xslope', 'xaspect','xsdelev', \
+          'xhor_n', 'xhor_e', 'xhor_s', 'xhor_w', 'xhor_ne', 'xhor_se', 'xhor_sw', 'xhor_nw', \
           'gdd','chstar','area','msftx','msfty','qrfs','qsprings','qslat','fdepth',\
           'ht','riverbed','eqzwt','rivercond','pexp','rechclim',\
           'planting','harvest','season_gdd',\
@@ -473,6 +474,15 @@ class HydroBlocks:
   self.noahmp.xslope[:] = self.input_fp.groups['parameters'].variables['slope'][:]
   self.noahmp.xaspect[:] = self.input_fp.groups['parameters'].variables['aspect'][:]
   self.noahmp.xsdelev[:] = self.input_fp.groups['parameters'].variables['sdelev'][:]
+  self.noahmp.xhor_n[:] = self.input_fp.groups['parameters'].variables['hor_n'][:]
+  self.noahmp.xhor_w[:] = self.input_fp.groups['parameters'].variables['hor_w'][:]
+  self.noahmp.xhor_s[:] = self.input_fp.groups['parameters'].variables['hor_s'][:]
+  self.noahmp.xhor_e[:] = self.input_fp.groups['parameters'].variables['hor_e'][:]
+  self.noahmp.xhor_nw[:] = self.input_fp.groups['parameters'].variables['hor_nw'][:]
+  self.noahmp.xhor_sw[:] = self.input_fp.groups['parameters'].variables['hor_sw'][:]
+  self.noahmp.xhor_se[:] = self.input_fp.groups['parameters'].variables['hor_se'][:]
+  self.noahmp.xhor_ne[:] = self.input_fp.groups['parameters'].variables['hor_ne'][:]
+
   self.noahmp.wtddt = 30.0
   self.noahmp.stepwtd = np.max([np.round(self.noahmp.wtddt*60.0/self.noahmp.dt),1])
   self.noahmp.runsf[:] = 0.0
@@ -935,7 +945,9 @@ class HydroBlocks:
   # Update NOAH
   n = self.noahmp
   n.update(n.z_ml,n.dt,n.lwdn,n.swdn,n.u_ml,n.v_ml,n.q_ml,n.t_ml,n.prcp,n.psfc,\
-           n.nowdate,n.xlat,n.xlon,n.cosz,n.azimuth, n.xsvf, n.xtvf, n.xslope, n.xaspect, n.xsdelev, n.swdn_toa, n.julian,\
+           n.nowdate,n.xlat,n.xlon,n.cosz,n.azimuth, n.xsvf, n.xtvf, n.xslope, n.xaspect, n.xsdelev, n.swdn_toa, \
+           n.xhor_n, n.xhor_e, n.xhor_s, n.xhor_w, n.xhor_ne, n.xhor_se, n.xhor_sw, n.xhor_nw, \
+           n.julian,\
            n.itime,n.year,\
            n.dzs,n.dx,\
            n.ivgtyp,n.isltyp,n.fvegmp,n.fvgmax,n.tmn,\
