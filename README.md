@@ -45,6 +45,8 @@ conda activate HB5
 ```
 
 
+./HB -m scripttest.json -t cluster
+
 ```
 ./HB -m scriptpp.json -t cluster
 ./HB -m script3d.json -t cluster

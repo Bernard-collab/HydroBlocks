@@ -287,6 +287,34 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  file_ca = '%s/hor_n_latlon.tif' % input_dir
  metadata['nodata'] = -9999.0
  gdal_tools.write_raster(file_ca,metadata,hor_n_map)
+
+ #Write out the hor_e map
+ hor_e_map = np.copy(covariates['hor_e'])
+ hor_e_map[np.isnan(hor_e_map) == 1] = -9999.0
+ file_ca = '%s/hor_e_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,hor_e_map)
+
+#Write out the hor_s map
+ hor_s_map = np.copy(covariates['hor_s'])
+ hor_s_map[np.isnan(hor_s_map) == 1] = -9999.0
+ file_ca = '%s/hor_s_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,hor_s_map)
+
+ #Write out the hor_nw map
+ hor_nw_map = np.copy(covariates['hor_nw'])
+ hor_nw_map[np.isnan(hor_nw_map) == 1] = -9999.0
+ file_ca = '%s/hor_nw_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,hor_nw_map)
+
+#Write out the hor_se map
+ hor_se_map = np.copy(covariates['hor_se'])
+ hor_se_map[np.isnan(hor_se_map) == 1] = -9999.0
+ file_ca = '%s/hor_se_latlon.tif' % input_dir
+ metadata['nodata'] = -9999.0
+ gdal_tools.write_raster(file_ca,metadata,hor_se_map)
  
 
  #Write the connection matrices
@@ -410,18 +438,7 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  # ezdev note: geospatial tools computes slope as a tangent, and aspect in rad. 
  # South=0, East=pi/2, up to pi, West -pi/2 up to -pi (North = -pi/2 and pi/2)
 
- # compute horizons for a given azimuth. From topocalc documentation:
- # The coordinate system for the azimuth is 0 degrees is South,
- #   with positive angles through East and negative values
- #   through West. Azimuth values must be on the -180 -> 0 -> 180 range.
- hor_n = horizon(180.0, np.float64(demns), eares)
- hor_ne = horizon(135.0, np.float64(demns), eares)
- hor_e = horizon(90.0, np.float64(demns), eares)
- hor_se = horizon(45.0, np.float64(demns), eares)
- hor_s = horizon(0.0, np.float64(demns), eares)
- hor_sw = horizon(-45.0, np.float64(demns), eares)
- hor_w = horizon(-90.0, np.float64(demns), eares)
- hor_nw = horizon(-135.0, np.float64(demns), eares)
+
 
  # ezdev note: topocalc computes slope as angle in radians
  # and aspect as angle in deg [option for radians] start o at North and increases clockwise to 360 / 2pi.
@@ -432,9 +449,9 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  # ezdev: compute sky view factor and terrain view factor
  # grid cell spacing for the DEM
  # dem_spacing = 30
- # slope2, aspect2 = gradient_d8(np.flipud(demns), eares, eares, aspect_rad=False)
- # slope2 =  np.flipud(slope2)
- # aspect2 = np.flipud(aspect2) 
+ slope2, aspect2 = gradient_d8(np.flipud(demns), eares, eares, aspect_rad=True)
+ slope2 =  np.flipud(slope2)
+ aspect2 = np.flipud(aspect2) 
  # aspect = aspect*180.0/np.pi
 
 
@@ -443,12 +460,18 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  # aspect2 = aspect2*np.pi/180.0
  # print(demns)
 
- # print('slope 1 = ', slope[3:7,3:7])
- # print('slope 2 = ', slope2[3:7,3:7])
- # print('aspect 1 = ', aspect[3:7,3:7])
- # print('aspect 2 = ', aspect2[3:7,3:7])
+ print('slope 1 = ', slope[3:7,3:7])
+ print('slope 2 = ', slope2[3:7,3:7])
+ print('aspect 1 = ', aspect[3:7,3:7])
+ print('aspect 2 = ', aspect2[3:7,3:7])
 
- # exit()
+ print('cos aspect 1 = ', np.cos(aspect[3:7,3:7]))
+ print('cos aspect 2 = ', np.cos(aspect2[3:7,3:7]))
+
+ print('sin aspect 1 = ', np.sin(aspect[3:7,3:7]))
+ print('sin aspect 2 = ', np.sin(aspect2[3:7,3:7]))
+
+ exit()
  """
  print(type(demns))
  print(type(demns[0,0]))
@@ -471,6 +494,19 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
 
  print("svf mean = ", np.mean(svf))
  print("tvf mean = ", np.mean(tvf))
+
+ # compute horizons for a given azimuth. From topocalc documentation:
+ # The coordinate system for the azimuth is 0 degrees is South,
+ #   with positive angles through East and negative values
+ #   through West. Azimuth values must be on the -180 -> 0 -> 180 range.
+ hor_n = horizon(180.0, np.float64(demns), eares)
+ hor_ne = horizon(135.0, np.float64(demns), eares)
+ hor_e = horizon(90.0, np.float64(demns), eares)
+ hor_se = horizon(45.0, np.float64(demns), eares)
+ hor_s = horizon(0.0, np.float64(demns), eares)
+ hor_sw = horizon(-45.0, np.float64(demns), eares)
+ hor_w = horizon(-90.0, np.float64(demns), eares)
+ hor_nw = horizon(-135.0, np.float64(demns), eares)
  # svf, tvf = viewf(np.random.rand(np.shape(demns)[0], np.shape(demns)[1]), spacing=30, nangles = 16) # default nangles is 72
  sdelev = demns # placeholder - use this variable to compute some local roughness metric
 

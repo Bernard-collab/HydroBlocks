@@ -1070,7 +1070,10 @@ contains
 
        ! Add a minus sign for COS beacuse the Aspect convention used in geospatialtools is with 0 south, positive towards east
        ! While AZI is computed with 0=North, Clockwise
-       COS_AZIM_ASPECT = -COS(ASPECT)*COS(AZIM) + SIN(ASPECT)*SIN(AZIM)
+       ! COS_AZIM_ASPECT = -COS(ASPECT)*COS(AZIM) + SIN(ASPECT)*SIN(AZIM)
+
+      
+       COS_AZIM_ASPECT = COS(3.14159265-ASPECT)*COS(AZIM) + SIN(3.14159265-ASPECT)*SIN(AZIM)
 
 
 
@@ -1079,8 +1082,9 @@ contains
        SINZ = SQRT(1.0 - COSZ*COSZ)
        COS_INC = COSZ * COS(SLOPE_RAD) + SINZ * SIN(SLOPE_RAD)*COS_AZIM_ASPECT
        COS_INC = min(max(COS_INC, -1.0), 1.0)
-       COS_INC_OVER_COSZ = min(10.0, COS_INC/COSZ)
-       COSZ_TMP = min(max(COSZ, 0.001), 1.0)
+       COS_INC_OVER_COSZ = COS_INC/COSZ
+       ! COS_INC_OVER_COSZ = min(10.0, COS_INC/COSZ)
+       ! COSZ_TMP = min(max(COSZ, 0.001), 1.0)
        
        ISSHADE = .false. ! for starters, let there be light
 
@@ -1109,7 +1113,7 @@ contains
  
 
 
-     ELSE IF(OPT_3DRAD == 3) THEN ! SAME BUT WITHOUT CAST SHADOWS
+    ELSE IF( (OPT_3DRAD == 3).and.(COSZ > 0.001)) THEN ! SAME BUT WITHOUT CAST SHADOWS
 
       IF (MY_HOR > COSZ) THEN
         ISSHADE = .true. ! CAST SHADE.
