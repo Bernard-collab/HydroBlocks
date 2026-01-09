@@ -1,13 +1,13 @@
 {
   "rdir": "/projects/ezorzetto@xsede.org/snow_experiment",
-  "experiment": "MSWX_3h_Snow_Project_4_3d",
+  "experiment": "MSWX_3h_Snow_Project2_3d",
   "startdate": {
     "year": 2014,
     "month": 1,
     "day": 1
   },
   "enddate": {
-    "year": 2014,
+    "year": 2016,
     "month": 12,
     "day": 29
   },
@@ -32,7 +32,8 @@
       "lc",
       "clay",
       "dem",
-      "aspect",
+      "x_aspect",
+      "y_aspect",
       "slope"
     ],
     "interridge_connectivity": false,
@@ -123,16 +124,17 @@
   },
   "output": {
     "vars": [
+      "qsnow",
       "totsmc",
       "swe",
       "snow_t",
       "snowh",
-      "isnow",
       "fsno",
-      "qsnow",
       "t2mv",
+      "t2mb",
       "swdn",
       "swdn_3d",
+      "swnet",
       "cosz",
       "azimuth"
       

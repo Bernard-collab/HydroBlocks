@@ -11,4 +11,6 @@ model/pyNoahMP/src/Utility_routines/*.f90
 *.nbc
 *.nbi
 experiments/*
+output_plots/
+output_plots_1000HRUs/
 *.slurm

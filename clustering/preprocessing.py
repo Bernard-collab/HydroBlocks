@@ -465,7 +465,6 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  # svf = slope2
  # tvf = aspect2
  # svf, tvf = viewf(demns[:200, :200]*10, spacing=90, nangles=16)
-
  svf, tvf = viewf( np.float64(demns), spacing = eares, nangles = 16)
 
  
@@ -1420,6 +1419,10 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
   mask_fine = gdal_tools.read_raster(file_fine)
   nlat = mask_coarse.shape[0]
   nlon = mask_coarse.shape[1]
+
+  # print('nlat = ', nlat)
+  # print('nlon = ', nlon)
+  # exit()
 
   #Compute the mapping for each hru
   for hru in np.arange(hydroblocks_info['nhru']):

@@ -1,6 +1,6 @@
 {
   "rdir": "/projects/ezorzetto@xsede.org/snow_experiment",
-  "experiment": "MSWX_3h_Snow_Project222_pp",
+  "experiment": "MSWX_3h_Snow_Project2_3d2",
   "startdate": {
     "year": 2014,
     "month": 1,
@@ -55,7 +55,7 @@
     "iopt_frz": 2,
     "iopt_inf": 2,
     "iopt_rad": 1,
-    "iopt_3drad": 1,
+    "iopt_3drad": 3,
     "iopt_alb": 2,
     "iopt_snf": 3,
     "iopt_tbot": 2,

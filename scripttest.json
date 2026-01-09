@@ -1,6 +1,6 @@
 {
   "rdir": "/projects/ezorzetto@xsede.org/snow_experiment",
-  "experiment": "MSWX_3h_Snow_Project222_pp",
+  "experiment": "MSWX_3h_Snow_Project_test_pp",
   "startdate": {
     "year": 2014,
     "month": 1,
@@ -20,11 +20,9 @@
   "hmc_parameters": {
     "number_of_characteristic_subbasins": 10,
     "average_height_difference_between_bands": 50,
-    "number_of_intraband_clusters": 50,
+    "number_of_intraband_clusters": 5,
     "subbasin_clustering_covariates": [
       "dem",
-      "x_aspect",
-      "y_aspect",
       "lats",
       "lons"
     ],
@@ -32,8 +30,6 @@
       "lc",
       "clay",
       "dem",
-      "x_aspect",
-      "y_aspect",
       "slope"
     ],
     "interridge_connectivity": false,

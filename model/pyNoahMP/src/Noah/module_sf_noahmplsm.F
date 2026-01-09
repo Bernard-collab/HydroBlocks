@@ -1002,29 +1002,40 @@ contains
           SWDOWN = SOLDN
        END IF 
 
-       ! FIGURE OUT HORIZON IN CURRENT DIRECTION:
-       DANGLE = 45.0
-       IF ((ABS(AZIM))<DANGLE/2.0) THEN
+       ! FIGURE OUT HORIZON ALONG CURRENT AZIMUTH DIRECTION:
+       DANGLE = 45.0/180.0*3.14159265
+       IF ((AZIM<DANGLE/2.0).OR.(AZIM>2.0*3.14159265 - DANGLE/2.0) )THEN
         MY_HOR = HOR_N
        ELSE IF (AZIM < DANGLE/2.0 + DANGLE ) THEN
         MY_HOR = HOR_NE
-       ELSE IF (AZIM < DANGLE/2.0 + 2.0*DANGLE ) THEN
+       ELSE IF (AZIM < DANGLE/2.0 + 2.0 * DANGLE ) THEN
         MY_HOR = HOR_E
-       ELSE IF (AZIM < DANGLE/2.0 + 3.0*DANGLE ) THEN
+       ELSE IF (AZIM < DANGLE/2.0 + 3.0 * DANGLE ) THEN
         MY_HOR = HOR_SE
-       ELSE IF (AZIM < DANGLE/2.0 + 4.0*DANGLE ) THEN
+       ELSE IF (AZIM < DANGLE/2.0 + 4.0 * DANGLE ) THEN
         MY_HOR = HOR_S
-       ELSE IF (AZIM < DANGLE/2.0 + 5.0*DANGLE ) THEN
+       ELSE IF (AZIM < DANGLE/2.0 + 5.0 * DANGLE ) THEN
         MY_HOR = HOR_SW
-       ELSE IF (AZIM < DANGLE/2.0 + 6.0*DANGLE ) THEN
+       ELSE IF (AZIM < DANGLE/2.0 + 6.0 * DANGLE ) THEN
         MY_HOR = HOR_W
-      ELSE IF (AZIM < DANGLE/2.0 + 7.0*DANGLE ) THEN
+      ELSE IF (AZIM < DANGLE/2.0 + 7.0 * DANGLE ) THEN
         MY_HOR = HOR_NW
+      ELSE
+        
+        WRITE(*,*) "-------- FATAL CALLED IN 3D RAD CORRECTION -----------"
+        write(*,*) "AZIM", AZIM
+        write(*,*) "COSZ", COSZ
+        write(*,*) "HOR_N", HOR_N
+        call wrf_error_fatal("Error in computing horizon angle")
+       ENDIF
+
+       IF ((AZIM>2.0*3.14159266).OR.(AZIM<0.0)) then
+        call wrf_error_fatal("Error: Azimuth angle out of bounds")
        ENDIF
 
 
 
-       ! EZDEV:: DIRECT-DIFFUSE APRTITIONING FOLLOWING RUIZ-ARIAS ET AL (2010):
+       ! EZDEV:: DIRECT-DIFFUSE PARTITIONING FOLLOWING RUIZ-ARIAS ET AL (2010):
        ! TODO: read actual deltaz and do this with 3d topo correction below.
        KT_PARTITION = min(SWDOWN/SWDN_TOA, 1.0)
        DIFFUSE_FRAC = 0.952 - 1.041*EXP(-EXP(2.300-4.702*KT_PARTITION))
@@ -1037,87 +1048,84 @@ contains
        SOLAI(2) = SWDOWN*DIFFUSE_FRAC*(1.-VIS_FRACTION)         ! diffuse nir
 
 
-       ! CORRECT SW DIRECT BASED ON ELEVATION (RUIZ ET AL 2010; FIDDLES ANF GRUBER; 2021)
-      IF (KT_PARTITION > 0.65) THEN
-       DELTA_ELEV = 0.0 ! difference in elevation between this lcoation and mean cell -> read from data.
-       KAPPA = - COSZ * LOG( (SOLAD(1)+SOLAD(2))/SWDN_TOA)
-       DELTA_SOLAD = SOLAD(1)*(1.0 - EXP(-KAPPA*DELTA_ELEV*COSZ))
-       SOLAD(1) = SOLAD(1) + DELTA_SOLAD
-       DELTA_SOLAD = SOLAD(2)*(1.0 - EXP(-KAPPA*DELTA_ELEV*COSZ))
-       SOLAD(2) = SOLAD(2) + DELTA_SOLAD
-      ENDIF 
+      ! CORRECT SW DIRECT BASED ON ELEVATION (RUIZ ET AL 2010; FIDDLES ANF GRUBER; 2021)
+      ! IF (KT_PARTITION > 0.65) THEN
+      ! DELTA_ELEV = 0.0 ! difference in elevation between this lcoation and mean cell -> read from data.
+      ! KAPPA = - COSZ * LOG( (SOLAD(1)+SOLAD(2))/SWDN_TOA)
+      ! DELTA_SOLAD = SOLAD(1)*(1.0 - EXP(-KAPPA*DELTA_ELEV*COSZ))
+      ! SOLAD(1) = SOLAD(1) + DELTA_SOLAD
+      ! DELTA_SOLAD = SOLAD(2)*(1.0 - EXP(-KAPPA*DELTA_ELEV*COSZ))
+      ! SOLAD(2) = SOLAD(2) + DELTA_SOLAD
+      ! ENDIF 
 
        ! SOLAD(1) = SWDOWN*0.7*0.5     ! direct  vis
        ! SOLAD(2) = SWDOWN*0.7*0.5     ! direct  nir
        ! SOLAI(1) = SWDOWN*0.3*0.5     ! diffuse vis
        ! SOLAI(2) = SWDOWN*0.3*0.5     ! diffuse nir
 
-       X_ASPECT = SIN(ASPECT)
-       Y_ASPECT = COS(ASPECT)
-       X_AZIMUTH = SIN(AZIM)
-       Y_AZIMUTH = COS(AZIM)
-       ! COS(AZIM-ASPECT)= 
-       ! COS_AZIM_ASPECT = -COS(ASPECT)*COS(AZIM) + SIN(ASPECT)*SIN(AZIM)
-       COS_AZIM_ASPECT = COS(ASPECT)*COS(AZIM) + SIN(ASPECT)*SIN(AZIM)
-       ! COS_AZIM_ASPECT = 1.0
+       ! X_ASPECT = SIN(ASPECT)
+       ! Y_ASPECT = COS(ASPECT)
+       ! X_AZIMUTH = SIN(AZIM)
+       ! Y_AZIMUTH = COS(AZIM)
+
+       ! Add a minus sign for COS beacuse the Aspect convention used in geospatialtools is with 0 south, positive towards east
+       ! While AZI is computed with 0=North, Clockwise
+       COS_AZIM_ASPECT = -COS(ASPECT)*COS(AZIM) + SIN(ASPECT)*SIN(AZIM)
+
+
 
        
        SLOPE_RAD = max(0.0, ATAN(SLOPE)) ! slope input from geospatialtools is tangent = dz / dL
-       SINZ = SQRT(1-COSZ*COSZ)
+       SINZ = SQRT(1.0 - COSZ*COSZ)
        COS_INC = COSZ * COS(SLOPE_RAD) + SINZ * SIN(SLOPE_RAD)*COS_AZIM_ASPECT
        COS_INC = min(max(COS_INC, -1.0), 1.0)
-       ! COSZ_TMP = COSZ
-       COSZ_TMP = min(max(COSZ, 0.001), 1.0)
-       ! COS_INC_OVER_COSZ = COS_INC/COSZ_TMP
        COS_INC_OVER_COSZ = min(10.0, COS_INC/COSZ)
-       ! COS_INC_OVER_COSZ = min(10.0, max(COS_INC/COSZ, 0.0))
-       ! COS_INC_OVER_COSZ = 1.0
-       ! TVF = max(TVF, 0.)
-       ! SVF = min(max(SVF, 0.), 1.)
-
+       COSZ_TMP = min(max(COSZ, 0.001), 1.0)
+       
        ISSHADE = .false. ! for starters, let there be light
+
+       LWDN_3D = LWDN ! TODO: do it in Energy, needs to solve TRAD iteratively or at least a guess
+       ! No reflections in plane-parallel radiation scheme
+       LW_REFL = 0. 
+       SW_REFL_DIF = 0.
+       SW_REFL_DIR = 0.
+       ! ------------ EZDEV compute 3DRAD radiation correction 
+     IF( (OPT_3DRAD == 2).and.(COSZ > 0.001)) THEN ! standard option 3drad
+
        IF (MY_HOR > COSZ) THEN
         ISSHADE = .true. ! CAST SHADE.
        ENDIF
        IF (COS_INC < 0.0) THEN
         ISSHADE = .true. ! SLOPE SELF SHADE.
        ENDIF
-
-       LWDN_3D = LWDN ! TODO: do it in Energy, needs to solve TRAD iteratively or at least a guess
-       LW_REFL = 0.
-       SW_REFL_DIF = 0.
-       SW_REFL_DIR = 0.
-       ! ------------ EZDEV compute 3DRAD radiation correction 
-     IF( (OPT_3DRAD == 2).and.(COSZ > 0.001)) THEN ! standard option 3drad
-
-      ! SW_REFL_DIF = ALBOLD * SOLAI * TVF ! TODO: do it by band in ENERGY, use [current] albedo by band
-      ! SW_REFL_DIR = ALBOLD * SOLAD * TVF
-
-
+      SW_REFL_DIF = ALBOLD * SOLAI * TVF ! TODO: do it by band in ENERGY, use [current] albedo by band
+      SW_REFL_DIR = ALBOLD * SOLAD * TVF
       IF (ISSHADE) THEN ! cast shade
         SOLAD = SW_REFL_DIR
       ELSE ! no shade
-        ! SOLAD = SOLAD * COS_INC_OVER_COSZ  + SW_REFL_DIR
-        SOLAD = SOLAD * COS_INC_OVER_COSZ 
-        SOLAI = SOLAI * COS_INC_OVER_COSZ  
+        SOLAD = SOLAD * COS_INC_OVER_COSZ  + SW_REFL_DIR
       ENDIF
-      ! SOLAI = SOLAI * SVF + SW_REFL_DIF
-      ! SOLAD = SOLAD * SVF + SW_REFL_DIF
+        SOLAI = SOLAI * SVF + SW_REFL_DIF
  
 
 
-     ELSE IF(OPT_3DRAD == 3) THEN
-      ! write(*,*) 'USING 3D RAD - OPTION 3'
-      ! new 3D radiation correction
-      SOLAI(1) = 1.25 * SOLAI(1) * ALBOLD / (ALBOLD + 0.01)
-      SOLAI(2) = 1.25 * SOLAI(2) * SVF
-      SOLAD(1) = 1.25 * SOLAD(1)
-      SOLAD(2) = 1.25 * SOLAD(2)
+     ELSE IF(OPT_3DRAD == 3) THEN ! SAME BUT WITHOUT CAST SHADOWS
 
-      LWDN_3D = 1.25 * LWDN
-      LW_REFL = 0.1
-      SW_REFL_DIF = 0.1
-      SW_REFL_DIR = 0.1
+      IF (MY_HOR > COSZ) THEN
+        ISSHADE = .true. ! CAST SHADE.
+       ENDIF
+       ! IF (COS_INC < 0.0) THEN
+       !  ISSHADE = .true. ! SLOPE SELF SHADE.
+       ! ENDIF
+      SW_REFL_DIF = ALBOLD * SOLAI * TVF ! TODO: do it by band in ENERGY, use [current] albedo by band
+      SW_REFL_DIR = ALBOLD * SOLAD * TVF
+      IF (ISSHADE) THEN ! cast shade
+        SOLAD = SW_REFL_DIR
+      ELSE ! no shade
+        SOLAD = SOLAD * COS_INC_OVER_COSZ  + SW_REFL_DIR
+      ENDIF
+        SOLAI = SOLAI * SVF + SW_REFL_DIF
+
      ENDIF
 
      ! update total downward radiation

@@ -46,11 +46,16 @@ conda activate HB5
 
 
 ```
+./HB -m scriptpp.json -t cluster
 ./HB -m script3d.json -t cluster
+./HB -m script3d2.json -t cluster
+
 ```
 
 ```
+./HB -m scriptpp.json -t model
 ./HB -m script3d.json -t model
+./HB -m script3d2.json -t model
 ```
 
 For postprocessing, use this env where i fixed matplotlib - broken for some reason
