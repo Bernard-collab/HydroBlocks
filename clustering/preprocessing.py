@@ -63,9 +63,12 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  input_dir = hydroblocks_info['input_dir']
  os.system('mkdir -p %s' % input_dir)
 
+
+
  #Create soft link to HydroBlocks from within the directory
  HBdir = '%s/model/pyNoahMP' % (("/").join(__file__.split('/')[:-2]))
  HBedir = '%s/pyNoahMP%d' % (input_dir,hydroblocks_info['cid'])
+ 
 
  if os.path.exists(HBedir) == False:
   os.system('ln -s %s %s' % (HBdir,HBedir))
@@ -79,6 +82,8 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
 
  #Get metadata
  md = gdal_tools.retrieve_metadata('%s/mask_latlon.tif' % workspace)
+
+ 
  
  #Prepare the input file
  wbd = {}
@@ -142,9 +147,13 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  #Create the clusters and their connections
  (output,covariates) = Create_Clusters_And_Connections(workspace,wbd,output,input_dir,nhru,info,hydroblocks_info)
 
+ 
+
  #Extract the meteorological forcing
  print("Preparing the meteorology",flush=True)
  Prepare_Meteorology_Semidistributed(workspace,wbd,output,input_dir,info,hydroblocks_info,covariates)
+
+ 
 
  #Extract the water use demands
  #print("Preparing the water use",flush=True)
@@ -460,18 +469,18 @@ def Compute_HRUs_Semidistributed_HMC(covariates,mask,hydroblocks_info,wbd,eares,
  # aspect2 = aspect2*np.pi/180.0
  # print(demns)
 
- print('slope 1 = ', slope[3:7,3:7])
- print('slope 2 = ', slope2[3:7,3:7])
- print('aspect 1 = ', aspect[3:7,3:7])
- print('aspect 2 = ', aspect2[3:7,3:7])
+ # print('slope 1 = ', slope[3:7,3:7])
+ # print('slope 2 = ', slope2[3:7,3:7])
+ # print('aspect 1 = ', aspect[3:7,3:7])
+ # print('aspect 2 = ', aspect2[3:7,3:7])
 
- print('cos aspect 1 = ', np.cos(aspect[3:7,3:7]))
- print('cos aspect 2 = ', np.cos(aspect2[3:7,3:7]))
+ # print('cos aspect 1 = ', np.cos(aspect[3:7,3:7]))
+ # print('cos aspect 2 = ', np.cos(aspect2[3:7,3:7]))
 
- print('sin aspect 1 = ', np.sin(aspect[3:7,3:7]))
- print('sin aspect 2 = ', np.sin(aspect2[3:7,3:7]))
+ # print('sin aspect 1 = ', np.sin(aspect[3:7,3:7]))
+ # print('sin aspect 2 = ', np.sin(aspect2[3:7,3:7]))
 
- exit()
+
  """
  print(type(demns))
  print(type(demns[0,0]))
@@ -1456,9 +1465,6 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
   nlat = mask_coarse.shape[0]
   nlon = mask_coarse.shape[1]
 
-  # print('nlat = ', nlat)
-  # print('nlon = ', nlon)
-  # exit()
 
   #Compute the mapping for each hru
   for hru in np.arange(hydroblocks_info['nhru']):
@@ -1512,7 +1518,9 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
   startdate = info['time_info']['startdate']
   enddate = info['time_info']['enddate']
   mask_dates = (dates >= startdate) & (dates <= enddate)
-  db_data[var] = np.ma.getdata(fp.variables[var][mask_dates,:,:])
+  print("EZDEV - CORRECT - TRY TO FIX LATITUDE MAPPING FOR FORCING")
+  # db_data[var] = np.ma.getdata(fp.variables[var][mask_dates,:,:])
+  db_data[var] = np.ma.getdata(fp.variables[var][mask_dates,::-1,:]) # swap latitude direction 
   fp.close()
  
  #Downscale the variables
@@ -1813,10 +1821,13 @@ def driver(comm,metadata_file):
   metadata['workspace'] = "%s/data/cids/%d" % (rdir,cid)
   #Prepare model data
   tic = time.time()
+
+
   Prepare_Model_Input_Data(metadata,metadata_file)
   elapsed = time.time() - tic
   elapsed_td = datetime.timedelta(seconds=elapsed)
   print("Elapsed time:", str(elapsed_td))
+  # exit()
  comm.Barrier()
 
  #Create enhanced input data file
