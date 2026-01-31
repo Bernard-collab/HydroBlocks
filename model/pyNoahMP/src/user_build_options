@@ -2,22 +2,22 @@
 #  Options for Linux with gfortran (not fully tested)
 #=============================================================================================
 
- COMPILERF90    =        /projects/ezorzetto@xsede.org/software/anaconda/envs/HB5/bin/gfortran
+ COMPILERF90    =        /projects/battobrah@xsede.org/software/anaconda/envs/HB3/bin/gfortran
  FREESOURCE     =       -ffree-form  -ffree-line-length-none -cpp
 # F90FLAGS       =       -g -fconvert=big-endian -fbounds-check -fno-range-check -fno-underscoring
  F90FLAGS       =       -g -fconvert=big-endian -O3 -fbounds-check -fbacktrace -fPIC -fallow-argument-mismatch #-Wall -fcheck=array-temps,bounds,do,mem,pointer -std=legacy
  MODFLAG        =       -I
  LDFLAGS        =       
- CPP            =        /projects/ezorzetto@xsede.org/software/anaconda/envs/HB5/bin/cpp
+ CPP            =        /projects/battobrah@xsede.org/software/anaconda/envs/HB3/bin/cpp
  CPPFLAGS       =       -P -traditional
  LIBS           =       -fopenmp
  LIBJASPER      =       -ljpeg -ljasper
  INCJASPER      =       
- NETCDFMOD      =        /projects/ezorzetto@xsede.org/software/anaconda/envs/HB5/include/
+ NETCDFMOD      =        /projects/battobrah@xsede.org/software/anaconda/envs/HB3/include/
  NETCDFLIB      =       -lnetcdf
  BZIP2          =       YES
  BZIP2_LIB      =       -lbz2 
- BZIP2_INCLUDE  =         -I/projects/ezorzetto@xsede.org/software/anaconda/envs/HB5/include/
+ BZIP2_INCLUDE  =         -I/projects/battobrah@xsede.org/software/anaconda/envs/HB3/include/
  RM             =       rm -f
- CC             =         /projects/ezorzetto@xsede.org/software/anaconda/envs/HB5/bin/cpp
+ CC             =         gcc
 

@@ -1,5 +1,5 @@
 {
-  "rdir": "/projects/ezorzetto@xsede.org/snow_experiment",
+  "rdir": "/scratch/alpine/battobrah@xsede.org/HydroBlocks_Enrico_dev",
   "experiment": "MSWX_3h_Snow_Project3_3d",
   "startdate": {
     "year": 2014,
@@ -116,7 +116,7 @@
     "flag": false,
     "type": "particle_tracker",
     "surface_coupling": false,
-    "dt_routing":3600
+    "dt_routing": 3600
   },
   "subsurface_module": "richards",
   "restart": {
@@ -137,7 +137,6 @@
       "swnet",
       "cosz",
       "azimuth"
-      
     ],
     "routing_vars": [
       "Q",
