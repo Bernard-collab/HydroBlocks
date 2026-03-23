@@ -2,14 +2,14 @@
   "rdir": "/scratch/alpine/battobrah@xsede.org/HydroBlocks_Enrico_dev",
   "experiment": "MSWX_3h_Snow_Project3_pp",
   "startdate": {
-    "year": 2014,
+    "year": 2016,
     "month": 1,
     "day": 1
   },
   "enddate": {
-    "year": 2024,
+    "year": 2018,
     "month": 12,
-    "day": 29
+    "day": 28
   },
   "dt": 10800.0,
   "channel_initiation": {
@@ -133,10 +133,12 @@
       "t2mv",
       "t2mb",
       "swdn",
-      "swdn_3d",
       "swnet",
+      "lwdn",
+      "lwnet",
       "cosz",
-      "azimuth"
+      "azimuth",
+      "smc"
     ],
     "routing_vars": [
       "Q",

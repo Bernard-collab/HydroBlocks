@@ -1,5 +1,6 @@
 {
-  "rdir": "/projects/ezorzetto@xsede.org/snow_experiment",
+  "rdir_old": "/projects/ezorzetto@xsede.org/snow_experiment",
+  "rdir": "/scratch/alpine/battobrah@xsede.org/snow_experiment",
   "experiment": "MSWX_3h_Snow_Project_3",
   "startdate": {
     "year": 2014,
@@ -54,7 +55,7 @@
     "iopt_rad": 1,
     "iopt_3drad": 1,
     "iopt_alb": 2,
-    "iopt_snf": 3,
+    "iopt_snf": 1,
     "iopt_tbot": 2,
     "iopt_stc": 2,
     "iopt_gla": 1,

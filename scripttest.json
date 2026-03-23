@@ -132,7 +132,8 @@
       "swdn_3d",
       "swnet",
       "cosz",
-      "azimuth"
+      "azimuth",
+      "smc"
     ],
     "routing_vars": [
       "Q",

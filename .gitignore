@@ -20,3 +20,4 @@ output_plots_1000HRUs/
 *.bak2
 *.bak_before_*
 file.txt
+hydroblocks-remote-sensing-validation/
