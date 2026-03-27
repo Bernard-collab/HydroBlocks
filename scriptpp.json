@@ -1,6 +1,6 @@
 {
   "rdir": "/scratch/alpine/battobrah@xsede.org/HydroBlocks_Enrico_dev",
-  "experiment": "MSWX_3h_Snow_Project3_pp",
+  "experiment": "NLDAS_3h_Snow_Project3_pp",
   "startdate": {
     "year": 2016,
     "month": 1,
@@ -19,7 +19,7 @@
   "soil_vertical_properties": true,
   "hmc_parameters": {
     "number_of_characteristic_subbasins": 10,
-    "average_height_difference_between_bands": 50,
+    "average_height_difference_between_bands": 10,
     "number_of_intraband_clusters": 50,
     "subbasin_clustering_covariates": [
       "dem",

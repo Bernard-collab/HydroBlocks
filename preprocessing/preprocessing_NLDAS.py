@@ -1999,8 +1999,6 @@ def prepare_input_data(cdir,cdb,metadata,rank,icatch):
  elif metadata['meteo']['dataset'] == 'MSWX':
   Extract_Meteorology_MSWX_v1(workspace,metadata,log)
   #Extract_Meteorology_MSWX(cdb,workspace,metadata,icatch,log)
-  #elif metadata['meteo']['dataset'] == 'NLDAS':
-  #  Extract_Meteorology_Daily(cdb, workspace, metadata, icatch, log)
  else:
   raise ValueError("Unknown meteorological dataset specified in metadata. You must specify 'PCF' or 'MSWX'.")
 
