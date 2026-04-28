@@ -33,15 +33,12 @@ from topocalc.horizon import horizon
 #sys.path.append('%s/../HydroBlocks/pyHWU/' % dir )
 #import management_funcs as mgmt_funcs
 
-def log(msg):
-    print(f"[HB] {msg}", flush=True)  #Ben added
-
 def plot_data(data):
 
  import matplotlib.pyplot as plt
  data = np.ma.masked_array(data,data==-9999)
  plt.figure(figsize=(10,10))
- plt.imshow(data)
+ plt.imshow(data)       #display data in 2D
  plt.colorbar()
  plt.savefig('tmp.png')
 
@@ -67,7 +64,6 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  os.system('mkdir -p %s' % input_dir)
 
 
-
  #Create soft link to HydroBlocks from within the directory
  HBdir = '%s/model/pyNoahMP' % (("/").join(__file__.split('/')[:-2]))
  HBedir = '%s/pyNoahMP%d' % (input_dir,hydroblocks_info['cid'])
@@ -89,10 +85,20 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  
  
  #Prepare the input file
- wbd = {}
+ wbd = {}     #wbd is watershed data dictionary
  wbd['bbox'] = {'minlat':md['miny'],'maxlat':md['maxy'],
                 'minlon':md['minx'],'maxlon':md['maxx'],
                 'res':abs(md['resx'])}
+
+# variables that control infiltration, moisture, and runoff: for NOAH MP physics
+#'WLTSMC'  → wilting point (soil moisture level below which plants can no longer extract water)
+#'MAXSMC'  → Maximum soil moisture (represnts porosity)
+#'DRYSMC'  → residual moisture (minimum water content that remains in the soil and cannot be removed, even under very dry conditions)
+#'REFSMC'  → reference soil moisture content(field capacity): SMC remaining after gravity drainage has stopped
+#'SATDK'   → saturated hydraulic conductivity; how fast water flows through fully wet soil
+#'SATPSI'  → saturated soil matric potential (soil suction at saturation); rep. how strongly the soil holds water near saturation
+#'SATDW'   → saturated soil water diffusivity; how fast water spreads through soil (by diffusion)
+
  wbd['files'] = {
   'WLTSMC':glob.glob('%s/theta1500/*'%workspace), #laura svp
   'TEXTURE_CLASS':'%s/texture_class/texture_class_latlon_2.5cm.tif' % workspace,
@@ -154,11 +160,6 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
 
  #Extract the meteorological forcing
  print("Preparing the meteorology",flush=True)
-
- #print("type(db_downscaled_data) =", type(db_downscaled_data), flush=True)    #Ben added
- #print("first few downscaled keys =", list(db_downscaled_data.keys())[:10], flush=True) #Ben added
- #print("current hru =", hru, " current var =", var, flush=True) #Ben added
-
  Prepare_Meteorology_Semidistributed(workspace,wbd,output,input_dir,info,hydroblocks_info,covariates)
 
  
@@ -174,14 +175,14 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
 
  #Write out the metadata
  grp = fp.createGroup('metadata')
- grp.latitude = (wbd['bbox']['minlat'] + wbd['bbox']['maxlat'])/2
- lon = (wbd['bbox']['minlon'] + wbd['bbox']['maxlon'])/2 
- if lon < 0:lon += 360
+ grp.latitude = (wbd['bbox']['minlat'] + wbd['bbox']['maxlat'])/2   # divide by 2 to centre domain lat
+ lon = (wbd['bbox']['minlon'] + wbd['bbox']['maxlon'])/2 # divide by 2 to centre domain lon
+ if lon < 0:lon += 360    #Converts longitude from [-180, 180] to [0, 360]
  grp.longitude = lon
  metadata = gdal_tools.retrieve_metadata(wbd['files']['mask']) 
  mask_object = gdal_tools.read_data(wbd['files']['mask'])
  terrain_tools.calculate_area(mask_object)
- grp.dx = np.mean(mask_object.area**0.5)
+ grp.dx = np.mean(mask_object.area**0.5)      #computes grid spacing by area exp 0.5
 
  #Write out the mapping
  hru_map = np.copy(output['hru_map'])
@@ -190,10 +191,10 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  metadata['nodata'] = -9999.0
  gdal_tools.write_raster(file_ca,metadata,hru_map)
 
- #Write out the hand map
+ #Write out the hand map; hand = Height Above Nearest Drainage (= elevation(cell) − elevation(nearest drainage))
  hand_map = np.copy(output['hand_map'])
  hand_map[np.isnan(hand_map) == 1] = -9999.0
- file_ca = '%s/hand_latlon.tif' % input_dir
+ file_ca = '%s/hand_latlon.tif' % input_dir     #string formatting(%what is inserted and %s-place holder/dir)
  metadata['nodata'] = -9999.0
  gdal_tools.write_raster(file_ca,metadata,hand_map)
 
@@ -1530,24 +1531,16 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
   # db_data[var] = np.ma.getdata(fp.variables[var][mask_dates,:,:])
   db_data[var] = np.ma.getdata(fp.variables[var][mask_dates,::-1,:]) # swap latitude direction 
   fp.close()
-  log(f"{var} loaded | shape={db_data[var].shape}") #Ben added
  
  #Downscale the variables
  flag_downscale = True
- log(f"Downscaling flag = {flag_downscale}")    # Ben added
- log("Starting downscaling...")   # Ben added
  if flag_downscale == True:
-  months = np.array([d.month for d in dates[mask_dates]])   ##Ben added this due to precipitaion downscale
-  db_downscaled_data = Downscale_Meteorology(db_data,mapping_info, months)    #Ben added months due to precipitaion downscale and covariates for swdn
-  #db_downscaled_data = Downscale_Meteorology(db_data,mapping_info, months, covariates)    #Ben added months due to precipitaion downscale and covariates for swdn
-  log("Downscaling completed")    #Ben added
+  db_downscaled_data = Downscale_Meteorology(db_data,mapping_info)
 
  #Finalize data
- log(f"Total variables to process: {len(db_data)}")    #Ben added
  for var in db_data:
-  log(f"Processing variable: {var}")   #Ben added
   for hru in mapping_info[var]:
-   pcts = mapping_info[var][hru]['pcts']
+   pcts = mapping_info[var][hru]['pcts']    #gets HRU weights, the code below decides whether to use downscale or coarse data
    if flag_downscale == False:
     coords = mapping_info[var][hru]['coords']
     coords[0][coords[0] >= db_data[var].shape[1]] = db_data[var].shape[1] - 1
@@ -1557,16 +1550,11 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
     tmp = db_downscaled_data[hru][var]
    tmp = pcts*tmp
    meteorology[var][:,hru] = np.sum(tmp,axis=1)
-   if hru == 0:
-    log(f"{var}: sample values min={np.min(meteorology[var][:,hru])}, max={np.max(meteorology[var][:,hru])}")   #Ben added
 
   #Write the meteorology to the netcdf file (single chunk for now...)
-  log(f"Writing variable to NetCDF: {var}")   #Ben added
   grp = hydroblocks_info['input_fp'].groups['meteorology']
   grp.createVariable(var,'f4',('time','hru'))#,zlib=True)
   grp.variables[var][:] = meteorology[var][:]
-  log(f"{var} successfully written")    #Ben aded
-  log(f"{var} shape written: {meteorology[var].shape}")   #Ben aded
 
  #Add time information
  dates = []
@@ -1582,88 +1570,75 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
  var[:] = dates[:]
 
  return
-# precipitation: (Liston & Elder, 2006) (Ben added)
-# ============================
-def get_precip_chi(month):
-    chi_table = {
-        1: 0.35, 2: 0.35, 3: 0.35,
-        4: 0.30, 5: 0.25, 6: 0.20, 
-        7: 0.20, 8: 0.20, 9: 0.20,
-        10: 0.25, 11: 0.30, 12: 0.35
-    }
-    return chi_table[month]
 
-#def Downscale_Meteorology(db_data, mapping_info, months, covariates):      #Ben added
-def Downscale_Meteorology(db_data,mapping_info, months):
-  log("Entered Downscale_Meteorology")  #Ben added
+def Downscale_Meteorology(db_data,mapping_info):
+ 
  #Iterate per hru
-  db_org = {}
-  db_ds = {}
-  #for hru in mapping_info['tair']: # Ben replaced this with the line below
-  for hru in range(len(mapping_info['tair'])):
-    if hru % 50 == 0:                       #Ben added
-        log(f"Downscaling HRU {hru}")
-    db_org[hru] = {}
-    db_ds[hru] = {}
+ db_org = {}
+ db_ds = {}
+ for hru in mapping_info['tair']:
+  db_org[hru] = {}
+  db_ds[hru] = {}
   #Collect the data
-    for var in db_data:
-      pcts = mapping_info[var][hru]['pcts']
-      coords = mapping_info[var][hru]['coords']
-      coords[0][coords[0] >= db_data[var].shape[1]] = db_data[var].shape[1] - 1
-      coords[1][coords[1] >= db_data[var].shape[2]] = db_data[var].shape[2] - 1
-      db_org[hru][var] = db_data[var][:,coords[0],coords[1]]
-    df = mapping_info['tair'][hru]['dem_fine']
-    dc = mapping_info['tair'][hru]['dem_coarse']
+  for var in db_data:
+   pcts = mapping_info[var][hru]['pcts']
+   coords = mapping_info[var][hru]['coords']
+   coords[0][coords[0] >= db_data[var].shape[1]] = db_data[var].shape[1] - 1
+   coords[1][coords[1] >= db_data[var].shape[2]] = db_data[var].shape[2] - 1
+   db_org[hru][var] = db_data[var][:,coords[0],coords[1]]
+  df = mapping_info['tair'][hru]['dem_fine']
+  dc = mapping_info['tair'][hru]['dem_coarse']
+
+  ## df = fine-scale elevation for the HRU/ elevation of the fine meteorology cell
+  ## dc = elevation of the corresponding coarse meteorology cell
+  ## dT = temperature adjustment
+  
   #A.Downscale temperature
-    dT = -6.0*10**-3*(df - dc)
-    db_ds[hru]['tair'] = dT[np.newaxis,:] + db_org[hru]['tair']
+  dT = -6.0*10**-3*(df - dc). #temp. is reduce if elevation df is higher that of dc, dT becomes negative otherwise the opposite
+  # Rate of change with height; lapse rate = -0.006 °C per meter
+  db_ds[hru]['tair'] = dT[np.newaxis,:] + db_org[hru]['tair']
   #db_ds[hru]['tair'] = db_org[hru]['tair'][:]
-  #B.Downscale longwave
+  
+  #B.Downscale longwave (longwave, L=ϵσT^4)
   #0.Compute radiative temperature 
-    sigma = 5.67*10**-8
-    emis = 1.0
-    trad = (db_org[hru]['lwdown']/sigma/emis)**0.25
+  sigma = 5.67*10**-8
+  emis = 1.0    #Real surfaces (soil, vegetation, atmosphere), ϵ≈0.90−0.99
+  trad = (db_org[hru]['lwdown']/sigma/emis)**0.25
   #1.Apply lapse rate to trad
-    trad = dT[np.newaxis,:] + trad
+  trad = dT[np.newaxis,:] + 
   
   #2.Compute longwave with new radiative tempearture
-    db_ds[hru]['lwdown'] = emis*sigma*trad**4
-    if hru == 0:
-      log(f"Sample dT mean = {np.mean(dT)}")      #Ben added
+  db_ds[hru]['lwdown'] = emis*sigma*trad**4
   #db_ds[hru]['lwdown'] = db_org[hru]['lwdown'][:]
-  
+
   #C.Downscale pressure
-    psurf = db_org[hru]['psurf'][:]*np.exp(-10**-3*(df-dc)/7.2)
-    db_ds[hru]['psurf'] = psurf[:]
-  
-  #D.Downscale specific humidity
+  psurf = db_org[hru]['psurf'][:]*np.exp(-10**-3*(df-dc)/7.2) #lowers pressure with increasing elevation
+  db_ds[hru]['psurf'] = psurf[:]
+  # 7.2 x -10**-3 = 7200m = scale or reference height
+
+  #D.Downscale specific humidity (mass of Water vapour/ mass of air)
   #db_ds[hru]['spfh'] = db_org[hru]['spfh'][:]
   #Convert to vapor pressure
-    e = db_org[hru]['psurf'][:]*db_org[hru]['spfh'][:]/0.622 #Pa
-    esat = 1000*saturated_vapor_pressure(db_org[hru]['tair'][:] - 273.15) #Pa
-    rh = e/esat
-    esat = 1000*saturated_vapor_pressure(db_ds[hru]['tair'][:] - 273.15) #Pa
-    e = rh*esat
-    q = 0.622*e/db_ds[hru]['psurf']
-    db_ds[hru]['spfh'] = q[:]
-  
-  #E.Downscale shortwave radiation
-    db_ds[hru]['swdown'] = db_org[hru]['swdown'][:] 
+  e = db_org[hru]['psurf'][:]*db_org[hru]['spfh'][:]/0.622 #Pa, vapour pressure
+  esat = 1000*saturated_vapor_pressure(db_org[hru]['tair'][:] - 273.15) #Pa, maximum vapour pressure
+  rh = e/esat
+  esat = 1000*saturated_vapor_pressure(db_ds[hru]['tair'][:] - 273.15) #Pa
+  e = rh*esat
+  q = 0.622*e/db_ds[hru]['psurf']   #convert vapour pressure to specific humidity
+  db_ds[hru]['spfh'] = q[:] # store new specific humidity
 
-  #F.Downscale Wind
-    db_ds[hru]['wind'] = db_org[hru]['wind'][:]  
+  # specific humidity is ration mass of Water vapour/ mass of air
 
-  #G.Downscale precipitation (original)
-    #db_ds[hru]['precip'] = db_org[hru]['precip'][:]
-  
-  #G. Downscale precipitation (MicroMet-style with monthly chi: (Liston & Elder, 2006)) - Ben added
-    dz_km = (df - dc) / 1000      #chi values in the paper are per km
-    chi_ts = np.array([get_precip_chi(m) for m in months])   # (time,)
-    factor = (1.0 + chi_ts[:, np.newaxis] * dz_km[np.newaxis, :]) / (1.0 - chi_ts[:, np.newaxis] * dz_km[np.newaxis, :])  # np.newaxis; expand dims for broadcasting: (time,1) * (1,HRU) - (time,HRU)
-    #factor = np.clip(factor, 0.2, 5.0)
-    db_ds[hru]['precip'] = db_org[hru]['precip'][:] * factor
-  print("final downscaled keys sample =", list(db_ds.keys())[:10], flush=True)    #Ben added
-  return db_ds
+  #E.Downscale shortwave radiation (Not done)
+  db_ds[hru]['swdown'] = db_org[hru]['swdown'][:]
+
+  #F.Downscale wind speed (Not done)
+  db_ds[hru]['wind'] = db_org[hru]['wind'][:]
+
+  #G.Downscale precipitation (Note done)
+  db_ds[hru]['precip'] = db_org[hru]['precip'][:]
+
+ return db_ds
 
 def saturated_vapor_pressure(T):
     es = 0.6112*np.exp(17.67*T/(T + 243.5))
@@ -1805,8 +1780,6 @@ def Prepare_Water_Use_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydrob
  
 
   #Assing to hrus
-  if hru % 50 == 0:
-    log(f"{var}: processing HRU {hru}")   #Ben added
   for hru in mapping_info[var]:
    if OUTPUT['hru']['land_cover'][hru] in water_use_land_cover[data_var]:
     #print data_var,data, data.shape, hru,mapping_info[var][hru]['pcts'],mapping_info[var][hru]['coords'],
@@ -1873,6 +1846,7 @@ def driver(comm,metadata_file):
   metadata['workspace'] = "%s/data/cids/%d" % (rdir,cid)
   #Prepare model data
   tic = time.time()
+
 
   Prepare_Model_Input_Data(metadata,metadata_file)
   elapsed = time.time() - tic

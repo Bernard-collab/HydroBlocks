@@ -889,7 +889,7 @@ contains
     END IF
 
     IF(SWDOWN.NE.0.) THEN
-      ALBEDO = FSR / SWDN_3D
+      ALBEDO = FSR / SWDOWN
     ELSE
       ALBEDO = -999.9
     END IF
@@ -1037,21 +1037,15 @@ contains
 
        ! EZDEV:: DIRECT-DIFFUSE PARTITIONING FOLLOWING RUIZ-ARIAS ET AL (2010):
        ! TODO: read actual deltaz and do this with 3d topo correction below.
-       !KT_PARTITION = min(SWDOWN/SWDN_TOA, 1.0) <----Ben changed to the one below for stability
-       KT_PARTITION = min(SWDOWN/max(SWDN_TOA,1.0), 1.0)
-       !Ben added below line
-       KT_PARTITION = MAX(KT_PARTITION, 0.0)
-
+       KT_PARTITION = min(SWDOWN/SWDN_TOA, 1.0)
        DIFFUSE_FRAC = 0.952 - 1.041*EXP(-EXP(2.300-4.702*KT_PARTITION))
-       DIFFUSE_FRAC = MIN(MAX(DIFFUSE_FRAC, 0.0), 1.0)
-
 
        VIS_FRACTION = 0.5
 
-       SOLAD(1) = SWDOWN*(1.0-DIFFUSE_FRAC)*VIS_FRACTION         ! direct  vis
-       SOLAD(2) = SWDOWN*(1.0-DIFFUSE_FRAC)*(1.-VIS_FRACTION)    ! direct  nir
+       SOLAD(1) = SWDOWN*(1.-DIFFUSE_FRAC)*VIS_FRACTION         ! direct  vis
+       SOLAD(2) = SWDOWN*(1.-DIFFUSE_FRAC)*(1.-VIS_FRACTION)    ! direct  nir
        SOLAI(1) = SWDOWN*DIFFUSE_FRAC*VIS_FRACTION              ! diffuse vis
-       SOLAI(2) = SWDOWN*DIFFUSE_FRAC*(1.0-VIS_FRACTION)         ! diffuse nir
+       SOLAI(2) = SWDOWN*DIFFUSE_FRAC*(1.-VIS_FRACTION)         ! diffuse nir
 
 
       ! CORRECT SW DIRECT BASED ON ELEVATION (RUIZ ET AL 2010; FIDDLES ANF GRUBER; 2021)

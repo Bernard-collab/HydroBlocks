@@ -1,6 +1,6 @@
 {
   "rdir": "/scratch/alpine/battobrah@xsede.org/HydroBlocks_Enrico_dev",
-  "experiment": "NLDAS_3h_Snow_Project3_pp",
+  "experiment": "MSWX_3h_Snow_Project3_pp_downscale_new_cl75_hbb25",
   "startdate": {
     "year": 2016,
     "month": 1,
@@ -18,23 +18,18 @@
   "connection_matrix_hbands": true,
   "soil_vertical_properties": true,
   "hmc_parameters": {
-    "number_of_characteristic_subbasins": 10,
-    "average_height_difference_between_bands": 10,
-    "number_of_intraband_clusters": 50,
+    "number_of_characteristic_subbasins": 2,
+    "average_height_difference_between_bands": 500,
+    "number_of_intraband_clusters": 20,
     "subbasin_clustering_covariates": [
       "dem",
-      "x_aspect",
-      "y_aspect",
       "lats",
       "lons"
     ],
     "intraband_clustering_covariates": [
-      "lc",
-      "clay",
       "dem",
-      "x_aspect",
-      "y_aspect",
-      "slope"
+      "lats",
+      "lons"
     ],
     "interridge_connectivity": false,
     "intervalley_connectivity": false,
@@ -57,7 +52,7 @@
     "iopt_rad": 1,
     "iopt_3drad": 1,
     "iopt_alb": 2,
-    "iopt_snf": 3,
+    "iopt_snf": 1,
     "iopt_tbot": 2,
     "iopt_stc": 2,
     "iopt_gla": 1,
@@ -138,7 +133,8 @@
       "lwnet",
       "cosz",
       "azimuth",
-      "smc"
+      "smc",
+      "trad"
     ],
     "routing_vars": [
       "Q",

@@ -1,6 +1,6 @@
 {
   "rdir": "/scratch/alpine/battobrah@xsede.org/HydroBlocks_Enrico_dev",
-  "experiment": "NLDAS_3h_Snow_Project3_3d",
+  "experiment": "MSWX_3h_Snow_Project3_3d_downscale_new",
   "startdate": {
     "year": 2016,
     "month": 1,
@@ -140,7 +140,8 @@
       "lwnet",
       "cosz",
       "azimuth",
-      "smc"
+      "smc",
+      "trad"
     ],
     "routing_vars": [
       "Q",

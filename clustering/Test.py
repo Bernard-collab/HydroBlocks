@@ -1537,7 +1537,7 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
  log(f"Downscaling flag = {flag_downscale}")    # Ben added
  log("Starting downscaling...")   # Ben added
  if flag_downscale == True:
-  months = np.array([d.month for d in dates[mask_dates]])   ##Ben added this due to precipitaion downscale
+  months = np.array([d.month for d in dates[mask_dates]])   ##Ben added this due to precipitaion downscales
   db_downscaled_data = Downscale_Meteorology(db_data,mapping_info, months)    #Ben added months due to precipitaion downscale and covariates for swdn
   #db_downscaled_data = Downscale_Meteorology(db_data,mapping_info, months, covariates)    #Ben added months due to precipitaion downscale and covariates for swdn
   log("Downscaling completed")    #Ben added
@@ -1582,7 +1582,7 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
  var[:] = dates[:]
 
  return
-# precipitation: (Liston & Elder, 2006) (Ben added)
+# precipitation (Ben added)
 # ============================
 def get_precip_chi(month):
     chi_table = {
@@ -1593,8 +1593,8 @@ def get_precip_chi(month):
     }
     return chi_table[month]
 
-#def Downscale_Meteorology(db_data, mapping_info, months, covariates):      #Ben added
-def Downscale_Meteorology(db_data,mapping_info, months):
+#def Downscale_Meteorology(db_data, mapping_info, months, covariates):      #Ben
+def Downscale_Meteorology(db_data,mapping_info, months, covariates):
   log("Entered Downscale_Meteorology")  #Ben added
  #Iterate per hru
   db_org = {}
@@ -1625,17 +1625,14 @@ def Downscale_Meteorology(db_data,mapping_info, months):
     trad = (db_org[hru]['lwdown']/sigma/emis)**0.25
   #1.Apply lapse rate to trad
     trad = dT[np.newaxis,:] + trad
-  
   #2.Compute longwave with new radiative tempearture
     db_ds[hru]['lwdown'] = emis*sigma*trad**4
     if hru == 0:
       log(f"Sample dT mean = {np.mean(dT)}")      #Ben added
   #db_ds[hru]['lwdown'] = db_org[hru]['lwdown'][:]
-  
   #C.Downscale pressure
     psurf = db_org[hru]['psurf'][:]*np.exp(-10**-3*(df-dc)/7.2)
     db_ds[hru]['psurf'] = psurf[:]
-  
   #D.Downscale specific humidity
   #db_ds[hru]['spfh'] = db_org[hru]['spfh'][:]
   #Convert to vapor pressure
@@ -1646,21 +1643,25 @@ def Downscale_Meteorology(db_data,mapping_info, months):
     e = rh*esat
     q = 0.622*e/db_ds[hru]['psurf']
     db_ds[hru]['spfh'] = q[:]
-  
   #E.Downscale shortwave radiation
     db_ds[hru]['swdown'] = db_org[hru]['swdown'][:] 
-
-  #F.Downscale Wind
-    db_ds[hru]['wind'] = db_org[hru]['wind'][:]  
-
-  #G.Downscale precipitation (original)
+    db_ds[hru]['swdn'] = db_ds[hru]['swdown']   #Ben added due to swdn and swdown use interchageably in the code
+  # E. Downscale shortwave radiation (simple SVF-based test)
+    svf_hru = np.mean(covariates['svf'][hru])  
+    f_diff = 0.3   # assume 30% diffuse, 70% terrain-modulated
+    sw_factor = f_diff + (1.0 - f_diff) * svf_hru
+    # optional safety limits
+    sw_factor = np.clip(sw_factor, 0.5, 1.5)
+    db_ds[hru]['swdown'] = db_org[hru]['swdown'][:] * sw_factor
+    #F.Downscale wind speed
+    db_ds[hru]['wind'] = db_org[hru]['wind'][:]
+  #G.Downscale precipitation
     #db_ds[hru]['precip'] = db_org[hru]['precip'][:]
-  
-  #G. Downscale precipitation (MicroMet-style with monthly chi: (Liston & Elder, 2006)) - Ben added
-    dz_km = (df - dc) / 1000      #chi values in the paper are per km
+    # G. Downscale precipitation (MicroMet-style with monthly chi) - Ben added
+    dz_km = (df - dc) / 1000
     chi_ts = np.array([get_precip_chi(m) for m in months])   # (time,)
-    factor = (1.0 + chi_ts[:, np.newaxis] * dz_km[np.newaxis, :]) / (1.0 - chi_ts[:, np.newaxis] * dz_km[np.newaxis, :])  # np.newaxis; expand dims for broadcasting: (time,1) * (1,HRU) - (time,HRU)
-    #factor = np.clip(factor, 0.2, 5.0)
+    factor = (1.0 + chi_ts[:, np.newaxis] * dz_km[np.newaxis, :]) / (1.0 - chi_ts[:, np.newaxis] * dz_km[np.newaxis, :])
+    factor = np.clip(factor, 0.2, 5.0)
     db_ds[hru]['precip'] = db_org[hru]['precip'][:] * factor
   print("final downscaled keys sample =", list(db_ds.keys())[:10], flush=True)    #Ben added
   return db_ds
