@@ -1,6 +1,6 @@
 {
   "rdir": "/scratch/alpine/battobrah@xsede.org/HydroBlocks_Enrico_dev",
-  "experiment": "MSWX_3h_Snow_Project3_3d_septiles_downscale_test_11",
+  "experiment": "MSWX_3h_Snow_Project3_3d_septiles_downscale_test_3111",
   "startdate": {
     "year": 2016,
     "month": 1,
@@ -18,8 +18,8 @@
   "connection_matrix_hbands": true,
   "soil_vertical_properties": true,
   "hmc_parameters": {
-    "number_of_characteristic_subbasins": 2,
-    "average_height_difference_between_bands": 500,
+    "number_of_characteristic_subbasins": 25,
+    "average_height_difference_between_bands": 100,
     "number_of_intraband_clusters": 125,
     "subbasin_clustering_covariates": [
       "dem",
