@@ -1,7 +1,7 @@
 {
-  "rdir_old": "/projects/ezorzetto@xsede.org/snow_experiment",
-  "rdir": "/scratch/alpine/battobrah@xsede.org/snow_experiment",
-  "experiment": "MSWX_3h_Snow_Project_3",
+  "rdir_old": "/scratch/alpine/battobrah@xsede.org/snow_experiment",
+  "rdir": "/scratch/alpine/battobrah@xsede.org/Rice_NMT_Snow/upper_colorado_test025",
+  "experiment": "MSWX_3h_Snow_Project_3_",
   "startdate": {
     "year": 2014,
     "month": 1,

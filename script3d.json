@@ -1,13 +1,13 @@
 {
-  "rdir": "/scratch/alpine/battobrah@xsede.org/HydroBlocks_Enrico_dev",
-  "experiment": "MSWX_3h_Snow_Project3_3d_downscale_new",
+  "rdir": "/scratch/alpine/battobrah@xsede.org/Rice_NMT_Snow/upper_colorado",
+  "experiment": "MSWX_3h_Snow_Project3_3d_upper_colorado_test025",
   "startdate": {
-    "year": 2016,
+    "year": 2014,
     "month": 1,
     "day": 1
   },
   "enddate": {
-    "year": 2018,
+    "year": 2024,
     "month": 12,
     "day": 28
   },
@@ -20,23 +20,16 @@
   "hmc_parameters": {
     "number_of_characteristic_subbasins": 10,
     "average_height_difference_between_bands": 50,
-    "number_of_intraband_clusters": 50,
+    "number_of_intraband_clusters": 10,
     "subbasin_clustering_covariates": [
       "dem",
-      "x_aspect",
-      "y_aspect",
       "lats",
-      "lons",
-      "svf",
-      "tvf"
+      "lons"
     ],
     "intraband_clustering_covariates": [
-      "lc",
-      "clay",
       "dem",
-      "x_aspect",
-      "y_aspect",
-      "slope"
+      "lats",
+      "lons"
     ],
     "interridge_connectivity": false,
     "intervalley_connectivity": false,
