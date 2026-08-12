@@ -1,13 +1,13 @@
 {
   "rdir": "/scratch/alpine/battobrah@xsede.org/Rice_NMT_Snow/upper_colorado",
-  "experiment": "MSWX_3h_Snow_Project3_pp_upper_colorado",
+  "experiment": "MSWX_3h_Snow_Project3_pp_upper_colorado_1year",
   "startdate": {
-    "year": 2016,
+    "year": 2014,
     "month": 1,
     "day": 1
   },
   "enddate": {
-    "year": 2016,
+    "year": 2014,
     "month": 12,
     "day": 28
   },
@@ -27,9 +27,11 @@
       "lons"
     ],
     "intraband_clustering_covariates": [
+      "lc",
+      "clay",
       "dem",
-      "lats",
-      "lons"
+      "aspect",
+      "slope"
     ],
     "interridge_connectivity": false,
     "intervalley_connectivity": false,
@@ -93,7 +95,7 @@
     "Tbot": 285.0
   },
   "segment": {
-    "years_per_segment": 11
+    "years_per_segment": 1
   },
   "dz": [
     0.05,
@@ -152,7 +154,10 @@
     "res": 0.0166666666667,
     "vars": [
       "trad",
-      "smc1"
+      "smc",
+      "swe",
+      "snowh",
+      "fsno"
     ]
   }
 }

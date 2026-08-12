@@ -1537,7 +1537,7 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
  log(f"Downscaling flag = {flag_downscale}")    # Ben added
  log("Starting downscaling...")   # Ben added
  if flag_downscale == True:
-  months = np.array([d.month for d in dates[mask_dates]])   ##Ben added this due to precipitaion downscale
+  months = np.array([d.month for d in dates[mask_dates]])   ##Ben added this due to precipitaion downscales
   db_downscaled_data = Downscale_Meteorology(db_data,mapping_info, months)    #Ben added months due to precipitaion downscale and covariates for swdn
   #db_downscaled_data = Downscale_Meteorology(db_data,mapping_info, months, covariates)    #Ben added months due to precipitaion downscale and covariates for swdn
   log("Downscaling completed")    #Ben added
@@ -1582,14 +1582,14 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
  var[:] = dates[:]
 
  return
-# precipitation: (Liston & Elder, 2006) (Ben added)
+# precipitation (Ben added)
 # ============================
 def get_precip_chi(month):
     chi_table = {
-        1: 0.35, 2: 0.35, 3: 0.35,
-        4: 0.30, 5: 0.25, 6: 0.20, 
-        7: 0.20, 8: 0.20, 9: 0.20,
-        10: 0.25, 11: 0.30, 12: 0.35
+        1: 0.70, 2: 0.70, 3: 0.70,
+        4: 0.60, 5: 0.50, 6: 0.40, 
+        7: 0.40, 8: 0.40, 9: 0.40,
+        10: 0.50, 11: 0.60, 12: 0.70
     }
     return chi_table[month]
 
@@ -1655,12 +1655,11 @@ def Downscale_Meteorology(db_data,mapping_info, months):
 
   #G.Downscale precipitation (original)
     #db_ds[hru]['precip'] = db_org[hru]['precip'][:]
-  
-  #G. Downscale precipitation (MicroMet-style with monthly chi: (Liston & Elder, 2006)) - Ben added
+  #G. Downscale precipitation (MicroMet-style with monthly chi) - Ben added
     dz_km = (df - dc) / 1000      #chi values in the paper are per km
     chi_ts = np.array([get_precip_chi(m) for m in months])   # (time,)
     factor = (1.0 + chi_ts[:, np.newaxis] * dz_km[np.newaxis, :]) / (1.0 - chi_ts[:, np.newaxis] * dz_km[np.newaxis, :])  # np.newaxis; expand dims for broadcasting: (time,1) * (1,HRU) - (time,HRU)
-    #factor = np.clip(factor, 0.2, 5.0)
+    factor = np.clip(factor, 0.2, 5.0)
     db_ds[hru]['precip'] = db_org[hru]['precip'][:] * factor
   print("final downscaled keys sample =", list(db_ds.keys())[:10], flush=True)    #Ben added
   return db_ds

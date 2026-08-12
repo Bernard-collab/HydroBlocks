@@ -90,7 +90,8 @@ def Run_HydroBlocks(metadata,edir,cids,rdir):
   #HB = HydroBlocks.initialize(info)
   print(' Run the model',flush=True)
   date = sidate
-  MPdb.HBdb[cid].noahmp.dzwt[:] = 0.0
+  for cid in MPdb.cids:
+    MPdb.HBdb[cid].noahmp.dzwt[:] = 0.0
   i = 0
   tic = time.time()
   while date < sfdate:

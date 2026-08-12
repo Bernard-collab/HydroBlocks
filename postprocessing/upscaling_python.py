@@ -11,6 +11,7 @@ import geospatialtools.upscaling_tools_fortran as upscaling_fortran
 import random
 import dateutil.relativedelta as relativedelta
 import rasterio
+import shutil
 
 def Create_Output_Files(metadata,rank,size,vars,startdate,enddate):
 
@@ -23,7 +24,12 @@ def Create_Output_Files(metadata,rank,size,vars,startdate,enddate):
  #ncores = info['ncores']
  #output_dir = info['output_dir']
  date = startdate
- dt = 1
+
+ # Save model timestep BEFORE reading mapping.tif metadata
+ model_dt = metadata['dt']
+
+# Convert model timestep from seconds to hours - Ben
+ dt = int(model_dt / 3600)
  #nt = (enddate - startdate).days + 1
  #nt_out = 24
  nt = 24*((enddate - startdate).days + 1)
@@ -35,20 +41,21 @@ def Create_Output_Files(metadata,rank,size,vars,startdate,enddate):
   dates.append(date)
   date = date + relativedelta.relativedelta(days=1)
  dates = np.array(dates)
- 
- #Define the dimensions
- file = '%s/experiments/simulations/%s/postprocess/mapping.tif' % (rdir,metadata['experiment'])
- metadata = gdal_tools.retrieve_metadata(file)
- #nlon_chunk = int(metadata['nx']/size**0.5)/2
- #nlat_chunk = int(metadata['ny']/size**0.5)/2
- nlon_chunk = int(metadata['nx']/10)
- nlat_chunk = int(metadata['ny']/10)
+
+ # Define the dimensions from mapping.tif
+ file = '%s/experiments/simulations/%s/postprocess/mapping.tif' % (
+    rdir, metadata['experiment']
+ )
+ map_metadata = gdal_tools.retrieve_metadata(file)
+
+ nlon_chunk = int(map_metadata['nx'] / 10)
+ nlat_chunk = int(map_metadata['ny'] / 10)
  #ntime_chunk = nt_out
- dims = {'nlat':metadata['ny'],
-         'nlon':metadata['nx'],
-         'res':metadata['resx'],
-         'minlon':metadata['minx'] + metadata['resx']/2,
-         'minlat':metadata['miny'] + metadata['resy']/2,
+ dims = {'nlat':map_metadata['ny'],
+         'nlon':map_metadata['nx'],
+         'res':map_metadata['resx'],
+         'minlon':map_metadata['minx'] + map_metadata['resx']/2,
+         'minlat':map_metadata['miny'] + map_metadata['resy']/2,
          'undef':-9999.0,
          'chunksize':(-9999,nlat_chunk,nlon_chunk)}
 
@@ -57,7 +64,10 @@ def Create_Output_Files(metadata,rank,size,vars,startdate,enddate):
   print("Creating the file for ",date,flush=True)
   #Update the number of days
   dtt = relativedelta.relativedelta(days=1)
-  nt_out = 24#((date + dtt) - date).days
+
+  # Number of model timesteps per day - #Ben
+  nt_out = int(86400 / model_dt)  
+  #nt_out = 24 #((date + dtt) - date).days
   dims['chunksize'] = nt_out
 
   #Define the file
@@ -169,23 +179,56 @@ def Create_Finescale_Maps(metadata):
 
  return metadata
 
+#Ben added start here
 def Create_Upscale_Template(metadata):
- 
+        
  res = metadata['upscaling']['res']
  rdir = metadata['rdir']
- file_cid = '%s/experiments/simulations/%s/postprocess/cids.vrt' % (rdir,metadata['experiment'])
- file = '%s/experiments/simulations/%s/postprocess/mapping.tif' % (rdir,metadata['experiment'])
- os.system('rm -rf %s' % file)
- #Create the upscaled grid -> summary per cell info
- os.system('gdalwarp %s -srcnodata -9999 -dstnodata -9999 -tr %.16f %.16f %s' % (file_cid,res,res,file))
 
+ edir = '%s/experiments/simulations/%s' % (rdir, metadata['experiment'])
+
+ file_cid = '%s/postprocess/cids.vrt' % edir
+ file_out = '%s/postprocess/mapping.tif' % edir
+
+ os.system('rm -f %s' % file_out)
+
+ print("Rank environment", flush=True)
+ print("PATH =", os.environ.get("PATH"), flush=True)
+ print("CONDA_PREFIX =", os.environ.get("CONDA_PREFIX"), flush=True)
+ print("which gdalwarp =", shutil.which("gdalwarp"), flush=True)
+
+ gdalwarp = "/projects/battobrah@xsede.org/software/anaconda/envs/HB3/bin/gdalwarp"
+
+ if not os.path.exists(gdalwarp):
+  raise RuntimeError("gdalwarp not found. Tried: %s" % gdalwarp)
+
+ cmd = '"%s" "%s" -srcnodata -9999 -dstnodata -9999 -tr %.16f %.16f "%s"' % (
+  gdalwarp, file_cid, res, res, file_out
+ )
+
+ print("Running:", cmd, flush=True)
+ ierr = os.system(cmd)
+
+ if ierr != 0:
+  raise RuntimeError("gdalwarp failed with code %s" % ierr)
+
+ if not os.path.exists(file_out):
+  raise RuntimeError("mapping.tif was not created: %s" % file_out)
  return
+
+ #Ben added end here
+
+ #Create the upscaled grid -> summary per cell info
+ #os.system('gdalwarp %s -srcnodata -9999 -dstnodata -9999 -tr %.16f %.16f %s' % (file_cid,res,res,file))
+
+ #return
 
 def Create_Upscale_Mapping(metadata,rank,bbox):
  
  rdir = metadata['rdir']
  file_cid = '%s/experiments/simulations/%s/postprocess/cids.vrt' % (rdir,metadata['experiment'])
  file_hrus = '%s/experiments/simulations/%s/postprocess/hrus.vrt' % (rdir,metadata['experiment'])
+ print("DEBUG rank", rank, "file_hrus =", file_hrus, flush=True)
  workspace = '%s/experiments/simulations/%s/postprocess/workspace' % (rdir,metadata['experiment'])
  os.system('mkdir -p %s' % workspace)
  
@@ -345,11 +388,16 @@ def Map_Model_Output(metadata,vars,rank,bbox,startdate,enddate):
  #window = rasterio.windows.Window(dims['iymin'],dims['ixmin'],dims['ny'],dims['nx'])
  window = rasterio.windows.Window(dims['ixmin'],dims['iymin'],dims['nx'],dims['ny'])
  icatch_finescale = rasterio.open(file_cid).read(1,window=window)
- icatchs = np.unique(icatch_finescale[icatch_finescale >= 0]).astype(np.int)
+ 
+ icatchs = np.unique(icatch_finescale[icatch_finescale >= 0]).astype(int)
 
- nlat = bbox['lats_upscale'].size#-1#metadata_upscale['ny']
- nlon = bbox['lons_upscale'].size#-1#metadata_upscale['nx']
- mask = np.zeros((nlat,nlon))
+ nlat = bbox['lats_upscale'].size
+ nlon = bbox['lons_upscale'].size
+ mask = np.zeros((nlat, nlon))
+
+ if icatchs.size == 0:
+    print(rank, "No catchments found in this rank box. Skipping Map_Model_Output.", flush=True)
+    return
   
  #Extract true location info
  ilats_upscale = bbox['ilats_upscale']
@@ -360,11 +408,16 @@ def Map_Model_Output(metadata,vars,rank,bbox,startdate,enddate):
  fps = {}
  for cid in icatchs:
   #file_output = '%s/catch_%d/output.nc' % (dir,icatch)
-  file_output = '%s/experiments/simulations/%s/output_data/%d/%04d-%02d-%02d.nc' % (rdir,metadata['experiment'],cid,startdate.year,startdate.month,startdate.day)
+  #file_output = '%s/experiments/simulations/%s/output_data/%d/%04d-%02d-%02d.nc' % (rdir,metadata['experiment'],cid,startdate.year,startdate.month,startdate.day)
+  file_output = '%s/experiments/simulations/%s/output_data/%d/2014-01-01.nc' % (rdir,metadata['experiment'],cid)
   fps[cid] = nc.Dataset(file_output)
 
  #Determine nt_out
- nt_out = fps[cid]['data'].variables['trad'].shape[0]
+ #nt_out = fps[cid]['data'].variables['trad'].shape[0]
+
+ # Get time dimension from first available CID. - Ben
+ first_cid = list(fps.keys())[0]
+ nt_out = fps[first_cid]['data'].variables['trad'].shape[0]
 
  #Initialize the output
  output = {}
@@ -379,7 +432,12 @@ def Map_Model_Output(metadata,vars,rank,bbox,startdate,enddate):
   for var in vars:
    #try:
    #data_catchment[var] = fps[icatch].groups['catchment'].variables[var][:,:]
-   data_catchment[var] = fps[icatch]['data'].variables['%s' % var][:,:]
+   #data_catchment[var] = fps[icatch]['data'].variables['%s' % var][:,:]
+   if var == "smc":
+    # Use  Top soil layer for SMAP validation: smc(time, hru, soil). - Ben
+    data_catchment[var] = fps[icatch]['data'].variables["smc"][:, :, 0]
+   else:
+    data_catchment[var] = fps[icatch]['data'].variables[var][:]
    #except:
    # flag_catchment = False
   #if flag_catchment == False:continue
@@ -418,18 +476,22 @@ def Map_Model_Output(metadata,vars,rank,bbox,startdate,enddate):
  dates_monthly = np.array(dates_monthly)'''
  #Create the dates array (daily)
  dates_daily = []
- timedelta = datetime.timedelta(hours=24)
  date = startdate
- while date <= enddate:
+ for _ in range(int(np.ceil(nt_out / int(86400 / metadata['dt'])))):
   dates_daily.append(date)
-  date = date + timedelta
+  date = date + datetime.timedelta(days=1)
  dates_daily = np.array(dates_daily)
- #Create the dates array (hourly)
+ 
+ # Create dates array at model timestep - Ben
  dates_hourly = []
  #timedelta = datetime.timedelta(hours=24)
- timedelta = datetime.timedelta(hours=1)
+
+ dt_hours = int(metadata['dt'] / 3600)          # Ben for 3 hourly instead of 1 hourly output
+ #timedelta = datetime.timedelta(hours=1) #Ben commented
+ timedelta = datetime.timedelta(hours=dt_hours) #Ben
  date = startdate
- while date <= enddate:
+# Match dates to number of model output timesteps. # Ben
+ for _ in range(nt_out):
   dates_hourly.append(date)
   date = date + timedelta
  dates_hourly = np.array(dates_hourly)
@@ -446,6 +508,10 @@ def Map_Model_Output(metadata,vars,rank,bbox,startdate,enddate):
   file = '%s/%d.pck' % (daily_dir,rank)
   #print date,date+timedelta
   #mask = (dates_daily >= date) & (dates_daily < date + timedelta)
+  #print("len(output[var]) =", output[var].shape[0], flush=True)
+  #print("len(dates_hourly) =", len(dates_hourly), flush=True)
+  #print("dt_hours =", dt_hours, flush=True)
+  #print("start/end =", startdate, enddate, flush=True)
   mask = (dates_hourly >= date) & (dates_hourly < date + timedelta)
   #output_daily = {'coords':{'ilats':ilats_upscale_flipped,'ilons':ilons_upscale},
   output_hourly = {'coords':{'ilats':ilats_upscale_flipped,'ilons':ilons_upscale},

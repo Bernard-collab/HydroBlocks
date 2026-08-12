@@ -906,7 +906,16 @@ class HydroBlocks:
   #Update meteorology
   i = int(np.floor(self.itime/self.nt_timestep))
   #it1 = i-1
-  #it2 = i
+  #it2 = i 
+  if len(self.noahmp.lwdn) != self.meteodata['lwdown'].shape[1]:
+    print(
+        "HRU MISMATCH:",
+        "CID=", self.cid,
+        "NOAHMP=", len(self.noahmp.lwdn),
+        "METEO=", self.meteodata['lwdown'].shape[1],
+        "NHGRU=", self.nhru,
+        flush=True
+    )
   self.noahmp.lwdn[:] = self.meteodata['lwdown'][i,:] #W/m2
   #self.noahmp.lwdn[:] = (self.meteodata['lwdown'][it1,:]+self.meteodata['lwdown'][it2,:])/2 #W/m2
   self.noahmp.swdn[:] = self.meteodata['swdown'][i,:] #W/m2

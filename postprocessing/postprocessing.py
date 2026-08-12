@@ -1,6 +1,7 @@
 import warnings
 warnings.filterwarnings('ignore')
 import postprocessing.upscaling_python as upscaling_python
+print("Using upscaling_python:", upscaling_python.__file__, flush=True)
 import geospatialtools.gdal_tools as gdal_tools
 import numpy as np
 import datetime
@@ -48,6 +49,7 @@ def driver(comm,metadata_file):
  vars = metadata['upscaling']['vars']
  #metadata['nt_in'] = 365*24
  #metadata['nt_out'] = 365*24
+ '''
  for year in range(metadata['idate'].year,metadata['fdate'].year+1):
   if year == metadata['idate'].year:
    startdate = metadata['idate']
@@ -69,6 +71,18 @@ def driver(comm,metadata_file):
   upscaling_python.Create_Output_Files(metadata,rank,size,vars,startdate,enddate)
   #Pause until all files have been processed
   comm.Barrier()
+ '''
+ #Ben replace start
+ startdate = metadata['idate']
+ enddate = metadata['fdate']
+
+ upscaling_python.Map_Model_Output(metadata, vars, rank, bbox_metadata, startdate, enddate)
+ comm.Barrier()
+
+ print(rank, "Creating the output files full period", flush=True)
+ upscaling_python.Create_Output_Files(metadata, rank, size, vars, startdate, enddate)
+ comm.Barrier()
+#Ben replace end
 
  return
 
