@@ -33,9 +33,6 @@ from topocalc.horizon import horizon
 #sys.path.append('%s/../HydroBlocks/pyHWU/' % dir )
 #import management_funcs as mgmt_funcs
 
-def log(msg):
-    print(f"[HB] {msg}", flush=True)  #Ben added
-
 def plot_data(data):
 
  import matplotlib.pyplot as plt
@@ -154,11 +151,6 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
 
  #Extract the meteorological forcing
  print("Preparing the meteorology",flush=True)
-
- #print("type(db_downscaled_data) =", type(db_downscaled_data), flush=True)    #Ben added
- #print("first few downscaled keys =", list(db_downscaled_data.keys())[:10], flush=True) #Ben added
- #print("current hru =", hru, " current var =", var, flush=True) #Ben added
-
  Prepare_Meteorology_Semidistributed(workspace,wbd,output,input_dir,info,hydroblocks_info,covariates)
 
  
@@ -1530,22 +1522,14 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
   # db_data[var] = np.ma.getdata(fp.variables[var][mask_dates,:,:])
   db_data[var] = np.ma.getdata(fp.variables[var][mask_dates,::-1,:]) # swap latitude direction 
   fp.close()
-  log(f"{var} loaded | shape={db_data[var].shape}") #Ben added
  
  #Downscale the variables
- flag_downscale = True
- log(f"Downscaling flag = {flag_downscale}")    # Ben added
- log("Starting downscaling...")   # Ben added
+ flag_downscale = False
  if flag_downscale == True:
-  months = np.array([d.month for d in dates[mask_dates]])   ##Ben added this due to precipitaion downscales
-  db_downscaled_data = Downscale_Meteorology(db_data,mapping_info, months)    #Ben added months due to precipitaion downscale and covariates for swdn
-  #db_downscaled_data = Downscale_Meteorology(db_data,mapping_info, months, covariates)    #Ben added months due to precipitaion downscale and covariates for swdn
-  log("Downscaling completed")    #Ben added
+  db_downscaled_data = Downscale_Meteorology(db_data,mapping_info)
 
  #Finalize data
- log(f"Total variables to process: {len(db_data)}")    #Ben added
  for var in db_data:
-  log(f"Processing variable: {var}")   #Ben added
   for hru in mapping_info[var]:
    pcts = mapping_info[var][hru]['pcts']
    if flag_downscale == False:
@@ -1557,16 +1541,11 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
     tmp = db_downscaled_data[hru][var]
    tmp = pcts*tmp
    meteorology[var][:,hru] = np.sum(tmp,axis=1)
-   if hru == 0:
-    log(f"{var}: sample values min={np.min(meteorology[var][:,hru])}, max={np.max(meteorology[var][:,hru])}")   #Ben added
 
   #Write the meteorology to the netcdf file (single chunk for now...)
-  log(f"Writing variable to NetCDF: {var}")   #Ben added
   grp = hydroblocks_info['input_fp'].groups['meteorology']
   grp.createVariable(var,'f4',('time','hru'))#,zlib=True)
   grp.variables[var][:] = meteorology[var][:]
-  log(f"{var} successfully written")    #Ben aded
-  log(f"{var} shape written: {meteorology[var].shape}")   #Ben aded
 
  #Add time information
  dates = []
@@ -1582,87 +1561,59 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
  var[:] = dates[:]
 
  return
-# precipitation (Ben added)
-# ============================
-def get_precip_chi(month):
-    chi_table = {
-        1: 0.70, 2: 0.70, 3: 0.70,
-        4: 0.60, 5: 0.50, 6: 0.40, 
-        7: 0.40, 8: 0.40, 9: 0.40,
-        10: 0.50, 11: 0.60, 12: 0.70
-    }
-    return chi_table[month]
 
-#def Downscale_Meteorology(db_data, mapping_info, months, covariates):      #Ben added
-def Downscale_Meteorology(db_data,mapping_info, months):
-  log("Entered Downscale_Meteorology")  #Ben added
+def Downscale_Meteorology(db_data,mapping_info):
+ 
  #Iterate per hru
-  db_org = {}
-  db_ds = {}
-  #for hru in mapping_info['tair']: # Ben replaced this with the line below
-  for hru in range(len(mapping_info['tair'])):
-    if hru % 50 == 0:                       #Ben added
-        log(f"Downscaling HRU {hru}")
-    db_org[hru] = {}
-    db_ds[hru] = {}
+ db_org = {}
+ db_ds = {}
+ for hru in mapping_info['tair']:
+  db_org[hru] = {}
+  db_ds[hru] = {}
   #Collect the data
-    for var in db_data:
-      pcts = mapping_info[var][hru]['pcts']
-      coords = mapping_info[var][hru]['coords']
-      coords[0][coords[0] >= db_data[var].shape[1]] = db_data[var].shape[1] - 1
-      coords[1][coords[1] >= db_data[var].shape[2]] = db_data[var].shape[2] - 1
-      db_org[hru][var] = db_data[var][:,coords[0],coords[1]]
-    df = mapping_info['tair'][hru]['dem_fine']
-    dc = mapping_info['tair'][hru]['dem_coarse']
+  for var in db_data:
+   pcts = mapping_info[var][hru]['pcts']
+   coords = mapping_info[var][hru]['coords']
+   coords[0][coords[0] >= db_data[var].shape[1]] = db_data[var].shape[1] - 1
+   coords[1][coords[1] >= db_data[var].shape[2]] = db_data[var].shape[2] - 1
+   db_org[hru][var] = db_data[var][:,coords[0],coords[1]]
+  df = mapping_info['tair'][hru]['dem_fine']
+  dc = mapping_info['tair'][hru]['dem_coarse']
   #A.Downscale temperature
-    dT = -6.0*10**-3*(df - dc)
-    db_ds[hru]['tair'] = dT[np.newaxis,:] + db_org[hru]['tair']
+  dT = -6.0*10**-3*(df - dc)
+  db_ds[hru]['tair'] = dT[np.newaxis,:] + db_org[hru]['tair']
   #db_ds[hru]['tair'] = db_org[hru]['tair'][:]
   #B.Downscale longwave
   #0.Compute radiative temperature 
-    sigma = 5.67*10**-8
-    emis = 1.0
-    trad = (db_org[hru]['lwdown']/sigma/emis)**0.25
+  sigma = 5.67*10**-8
+  emis = 1.0
+  trad = (db_org[hru]['lwdown']/sigma/emis)**0.25
   #1.Apply lapse rate to trad
-    trad = dT[np.newaxis,:] + trad
-  
+  trad = dT[np.newaxis,:] + trad
   #2.Compute longwave with new radiative tempearture
-    db_ds[hru]['lwdown'] = emis*sigma*trad**4
-    if hru == 0:
-      log(f"Sample dT mean = {np.mean(dT)}")      #Ben added
+  db_ds[hru]['lwdown'] = emis*sigma*trad**4
   #db_ds[hru]['lwdown'] = db_org[hru]['lwdown'][:]
-  
   #C.Downscale pressure
-    psurf = db_org[hru]['psurf'][:]*np.exp(-10**-3*(df-dc)/7.2)
-    db_ds[hru]['psurf'] = psurf[:]
-  
+  psurf = db_org[hru]['psurf'][:]*np.exp(-10**-3*(df-dc)/7.2)
+  db_ds[hru]['psurf'] = psurf[:]
   #D.Downscale specific humidity
   #db_ds[hru]['spfh'] = db_org[hru]['spfh'][:]
   #Convert to vapor pressure
-    e = db_org[hru]['psurf'][:]*db_org[hru]['spfh'][:]/0.622 #Pa
-    esat = 1000*saturated_vapor_pressure(db_org[hru]['tair'][:] - 273.15) #Pa
-    rh = e/esat
-    esat = 1000*saturated_vapor_pressure(db_ds[hru]['tair'][:] - 273.15) #Pa
-    e = rh*esat
-    q = 0.622*e/db_ds[hru]['psurf']
-    db_ds[hru]['spfh'] = q[:]
-  
+  e = db_org[hru]['psurf'][:]*db_org[hru]['spfh'][:]/0.622 #Pa
+  esat = 1000*saturated_vapor_pressure(db_org[hru]['tair'][:] - 273.15) #Pa
+  rh = e/esat
+  esat = 1000*saturated_vapor_pressure(db_ds[hru]['tair'][:] - 273.15) #Pa
+  e = rh*esat
+  q = 0.622*e/db_ds[hru]['psurf']
+  db_ds[hru]['spfh'] = q[:]
   #E.Downscale shortwave radiation
-    db_ds[hru]['swdown'] = db_org[hru]['swdown'][:] 
+  db_ds[hru]['swdown'] = db_org[hru]['swdown'][:]
+  #F.Downscale wind speed
+  db_ds[hru]['wind'] = db_org[hru]['wind'][:]
+  #G.Downscale precipitation
+  db_ds[hru]['precip'] = db_org[hru]['precip'][:]
 
-  #F.Downscale Wind
-    db_ds[hru]['wind'] = db_org[hru]['wind'][:]  
-
-  #G.Downscale precipitation (original)
-    #db_ds[hru]['precip'] = db_org[hru]['precip'][:]
-  #G. Downscale precipitation (MicroMet-style with monthly chi) - Ben added
-    dz_km = (df - dc) / 1000      #chi values in the paper are per km
-    chi_ts = np.array([get_precip_chi(m) for m in months])   # (time,)
-    factor = (1.0 + chi_ts[:, np.newaxis] * dz_km[np.newaxis, :]) / (1.0 - chi_ts[:, np.newaxis] * dz_km[np.newaxis, :])  # np.newaxis; expand dims for broadcasting: (time,1) * (1,HRU) - (time,HRU)
-    factor = np.clip(factor, 0.2, 5.0)
-    db_ds[hru]['precip'] = db_org[hru]['precip'][:] * factor
-  print("final downscaled keys sample =", list(db_ds.keys())[:10], flush=True)    #Ben added
-  return db_ds
+ return db_ds
 
 def saturated_vapor_pressure(T):
     es = 0.6112*np.exp(17.67*T/(T + 243.5))
@@ -1804,8 +1755,6 @@ def Prepare_Water_Use_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydrob
  
 
   #Assing to hrus
-  if hru % 50 == 0:
-    log(f"{var}: processing HRU {hru}")   #Ben added
   for hru in mapping_info[var]:
    if OUTPUT['hru']['land_cover'][hru] in water_use_land_cover[data_var]:
     #print data_var,data, data.shape, hru,mapping_info[var][hru]['pcts'],mapping_info[var][hru]['coords'],
@@ -1872,6 +1821,7 @@ def driver(comm,metadata_file):
   metadata['workspace'] = "%s/data/cids/%d" % (rdir,cid)
   #Prepare model data
   tic = time.time()
+
 
   Prepare_Model_Input_Data(metadata,metadata_file)
   elapsed = time.time() - tic

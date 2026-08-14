@@ -889,7 +889,7 @@ contains
     END IF
 
     IF(SWDOWN.NE.0.) THEN
-      ALBEDO = FSR / SWDN_3D
+      ALBEDO = FSR / SWDOWN
     ELSE
       ALBEDO = -999.9
     END IF

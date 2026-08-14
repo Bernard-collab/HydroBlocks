@@ -8,7 +8,7 @@ import sys
 import scipy.sparse as sparse
 import pickle
 import subprocess
-import NoahMP
+#import NoahMP
 
 def assign_string(nelem,pstring):
 
@@ -287,13 +287,14 @@ class HydroBlocks:
   #from model.pyNoahMP import NoahMP
   #importlib.reload(NoahMP)
   #self.noahmp = pyNoahMP.NoahMP
-  import NoahMP
-  self.noahmp = NoahMP
+  #import NoahMP
   #self.noahmp = NoahMP
+  #self.noahmp = NoahMP
+  exec('self.noahmp = NoahMP')
   #import sys 
   #del NoahMP
   #del sys.modules['model.pyNoahMP']
-
+  
   #Initialize parameters
   self.noahmp.ncells = self.nhru
   self.noahmp.nsoil = self.nsoil
@@ -570,13 +571,14 @@ class HydroBlocks:
 
   #Define the parameters
   noah = self.noahmp
-  import NoahMP
-  print('NOAHMP USING:', NoahMP.__file__)
-  print('PYTHONPATH:', os.environ.get('PYTHONPATH',''))
-  print('json iopt_run:', info['noahmp_options']['iopt_run'], type(info['noahmp_options']['iopt_run']))
-  print('int(iopt_run):', int(info['noahmp_options']['iopt_run']), type(int(info['noahmp_options']['iopt_run'])))
-  noah.iopt_run  = int(info['noahmp_options']['iopt_run'])
-  noah.iopt_crop = int(info['noahmp_options']['iopt_crop'])
+  #import NoahMP
+  #print('NOAHMP USING:', NoahMP.__file__)
+  print('NOAHMP USING:', self.noahmp.__file__)
+  #print('PYTHONPATH:', os.environ.get('PYTHONPATH',''))
+  #print('json iopt_run:', info['noahmp_options']['iopt_run'], type(info['noahmp_options']['iopt_run']))
+  #print('int(iopt_run):', int(info['noahmp_options']['iopt_run']), type(int(info['noahmp_options']['iopt_run'])))
+  #noah.iopt_run  = int(info['noahmp_options']['iopt_run'])
+  #noah.iopt_crop = int(info['noahmp_options']['iopt_crop'])
   self.noahmp.initialize(noah.llanduse,noah.snow,noah.snowh,noah.canwat,\
           noah.isltyp,noah.ivgtyp,noah.xlat,noah.xsvf,noah.xtvf,noah.xslope,noah.xaspect,noah.xsdelev,noah.tslb,noah.smois,noah.sh2o,noah.dzs,\
           noah.fndsoilw,noah.fndsnowh,noah.tsk,noah.isnow,noah.tv,noah.tg,noah.canice,\
@@ -585,7 +587,7 @@ class HydroBlocks:
           noah.wt,noah.tsno,noah.zsnso,noah.snice,noah.snliq,noah.lfmass,noah.rtmass,\
           noah.stmass,noah.wood,noah.stblcp,noah.fastcp,noah.sai,noah.lai,noah.grain,\
           noah.gdd,noah.croptype,noah.cropcat,noah.t2mv,noah.t2mb,noah.chstar,\
-          noah.restart,noah.allowed_to_read,int(info['noahmp_options']['iopt_run']),int(info['noahmp_options']['iopt_crop']),\
+          noah.restart,noah.allowed_to_read,noah.iopt_run,noah.iopt_crop,\
           noah.sf_urban_physics,noah.smoiseq,noah.smcwtd,noah.rech,\
           noah.deeprech,noah.area,noah.dx,noah.dy,noah.msftx,noah.msfty,noah.wtddt,\
           noah.stepwtd,noah.dt,noah.qrfs,noah.qsprings,noah.qslat,noah.fdepth,\
