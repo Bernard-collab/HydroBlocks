@@ -1904,12 +1904,30 @@ def Postprocess_Input(rdir,edir,cids,rank,size,comm):
 
  sdir = '%s/postprocess' % (edir)
  ddir = '%s/data/cids' % rdir
- os.system('rm -rf %s' % sdir)
+ #os.system('rm -rf %s' % sdir) #Ben commented
+
  #Create cid, hru, and channel maps
- vars = ['cids','cids_org','dem','hrus','channels','hand','basins','basin_clusters']
+ #vars = ['cids','cids_org','dem','hrus','channels','hand','basins','basin_clusters'] #Ben commented 
+ vars = ['cids','cids_org','dem','hrus','channels','hand','basins','basin_clusters','slope','y_aspect','x_aspect','svf','tvf','hor_n','hor_w']  #Ben added additional static variables to the mosiac vrt creation
+
+# Create postprocess folders safely (Ben edits started here)
+ # Only rank 0 manages the shared postprocess directories
+ if rank == 0:
+  os.system('rm -rf "%s"' % sdir)
+
+  for var in vars:
+   os.system('mkdir -p "%s/%s"' % (sdir,var))
+
+ # Wait until rank 0 has finished creating every directory
+ comm.Barrier()
+ #Ben edits ended here
+
  # vars = ['cids','cids_org','dem','hrus','channels','hand','basins','basin_clusters', 'svf', 'tvf', 'slope', 'aspect']
- for var in vars:
-  os.system('mkdir -p %s/postprocess/%s' % (edir,var))
+  #Ben commented starts here
+ #for var in vars:
+  #os.system('mkdir -p %s/postprocess/%s' % (edir,var))
+ # Ben Commented ends here
+
  for cid in cids[rank::size]:
   print('Copying files for vrt',cid,flush=True)
   dir = '%s/%s' % (edir,cid)
@@ -1952,6 +1970,43 @@ def Postprocess_Input(rdir,edir,cids,rank,size,comm):
   ifile = '%s/basin_clusters_latlon.tif' % dir
   ofile = '%s/basin_clusters/%d.tif' % (sdir,cid)
   os.system('ln -s %s %s' % (ifile,ofile))
+
+  #Ben added Additional static rasters starts here
+  #slope
+  ifile = '%s/slope_latlon.tif' % dir
+  ofile = '%s/slope/%d.tif' % (sdir,cid)
+  os.system('ln -s %s %s' % (ifile,ofile))
+
+  #y aspect
+  ifile = '%s/y_aspect_latlon.tif' % dir
+  ofile = '%s/y_aspect/%d.tif' % (sdir,cid)
+  os.system('ln -s %s %s' % (ifile,ofile))
+
+  #x aspect
+  ifile = '%s/x_aspect_latlon.tif' % dir
+  ofile = '%s/x_aspect/%d.tif' % (sdir,cid)
+  os.system('ln -s %s %s' % (ifile,ofile))
+
+  #sky-view factor
+  ifile = '%s/svf_latlon.tif' % dir
+  ofile = '%s/svf/%d.tif' % (sdir,cid)
+  os.system('ln -s %s %s' % (ifile,ofile))
+
+  #terrain-view factor
+  ifile = '%s/tvf_latlon.tif' % dir
+  ofile = '%s/tvf/%d.tif' % (sdir,cid)
+  os.system('ln -s %s %s' % (ifile,ofile))
+
+  #north horizon
+  ifile = '%s/hor_n_latlon.tif' % dir
+  ofile = '%s/hor_n/%d.tif' % (sdir,cid)
+  os.system('ln -s %s %s' % (ifile,ofile))
+
+  #west horizon
+  ifile = '%s/hor_w_latlon.tif' % dir
+  ofile = '%s/hor_w/%d.tif' % (sdir,cid)
+  os.system('ln -s %s %s' % (ifile,ofile))
+  #Ben additional vars ends here
 
  #Create vrts
  comm.Barrier()
