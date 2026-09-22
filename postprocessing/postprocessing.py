@@ -123,11 +123,30 @@ def Determine_Bounding_Box(metadata,rank,size):
  lats_upscale_box = lats_upscale#[ibox*nlat_upscale:(ibox+1)*nlat_upscale]#+1]
  #lons_upscale_box = lons_upscale[jbox*nlon_upscale:(jbox+1)*nlon_upscale]#+1]
  lons_upscale_box = lons_upscale[ilons_upscale_min:ilons_upscale_max+1]
+ 
+ # # Ben added Enrico's MPI domain-decomposition safety check
+ if len(lons_upscale_box) == 0:
+    print('EZDEV: LON nodata')
+    print(
+        'EZDEV: lons_upscale.size = {}, size = {}, '
+        'split_size = {}, ilons_upscale_min = {}, '
+        'ilons_upscale_max = {}, rank = {}'.format(
+            lons_upscale.size,
+            size,
+            split_size,
+            ilons_upscale_min,
+            ilons_upscale_max,
+            rank
+        ),
+        flush=True
+    )
+    raise Exception("Error with MPI domain decomposition")
+
  ilats_upscale_box = np.where(np.in1d(lats_upscale,lats_upscale_box))[0]
  ilons_upscale_box = np.where(np.in1d(lons_upscale,lons_upscale_box))[0]
  ilats_upscale_flipped_box = np.where(np.in1d(lats_upscale_flipped,lats_upscale_box))[0]
  
- print(rank,np.where((lons_finescale+res_finescale/2 <= lons_upscale_box[-1]+res_upscale/2) & (lons_finescale-res_finescale/2 >= lons_upscale_box[0]-res_upscale/2))[0],flush=True)
+ #print(rank,np.where((lons_finescale+res_finescale/2 <= lons_upscale_box[-1]+res_upscale/2) & (lons_finescale-res_finescale/2 >= lons_upscale_box[0]-res_upscale/2))[0],flush=True)
 
  #Determine the lats/lons and ilats/ilons for the bounding box (finescale)
  ilats_finescale_box = np.where((lats_finescale+res_finescale/2 <= lats_upscale_box[-1]+res_upscale/2) &

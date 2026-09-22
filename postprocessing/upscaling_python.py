@@ -408,8 +408,8 @@ def Map_Model_Output(metadata,vars,rank,bbox,startdate,enddate):
  fps = {}
  for cid in icatchs:
   #file_output = '%s/catch_%d/output.nc' % (dir,icatch)
-  #file_output = '%s/experiments/simulations/%s/output_data/%d/%04d-%02d-%02d.nc' % (rdir,metadata['experiment'],cid,startdate.year,startdate.month,startdate.day)
-  file_output = '%s/experiments/simulations/%s/output_data/%d/2014-01-01.nc' % (rdir,metadata['experiment'],cid)
+  file_output = '%s/experiments/simulations/%s/output_data/%d/%04d-%02d-%02d.nc' % (rdir,metadata['experiment'],cid,startdate.year,startdate.month,startdate.day)
+  #file_output = '%s/experiments/simulations/%s/output_data/%d/2014-01-01.nc' % (rdir,metadata['experiment'],cid)
   fps[cid] = nc.Dataset(file_output)
 
  #Determine nt_out
