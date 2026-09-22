@@ -21,3 +21,6 @@ output_plots_1000HRUs/
 *.bak_before_*
 file.txt
 hydroblocks-remote-sensing-validation/
+# SLURM and runtime logs
+*.out
+*.err
