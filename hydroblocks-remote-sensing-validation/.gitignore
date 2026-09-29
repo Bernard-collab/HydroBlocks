@@ -1,0 +1,4 @@
+figures_smap_seasonal/
+__pycache__/
+.ipynb_checkpoints/
+validation_notebooks/test_analysis_remote_sens_data.ipynb
