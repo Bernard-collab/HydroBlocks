@@ -1209,7 +1209,8 @@ class HydroBlocks:
   tmp['ecan'] = np.copy(NOAH.ecan) #W/m2
   tmp['etran'] = np.copy(NOAH.etran) #W/m2
   tmp['edir'] = np.copy(NOAH.edir) #W/m2
-  tmp['swdn'] = np.copy(NOAH.swdn) #W/m2
+  #tmp['swdn'] = np.copy(NOAH.swdn) #W/m2
+  tmp['swdn'] = np.where(NOAH.cosz <= 0.0, 0.0, NOAH.swdn) #W/m2
   tmp['lwdn'] = np.copy(NOAH.lwdn) #W/m2
   tmp['t2mv'] = np.copy(NOAH.t2mv) #W/m2
   tmp['t2mb'] = np.copy(NOAH.t2mb) #W/m2
@@ -1501,7 +1502,7 @@ class HydroBlocks:
              'psn':{'description':'Total photosynthesis','units':'umol/m2/s','dims':('time','hru',),'precision':4},
              'apar':{'description':'Photosynthesis active energy by canopy','units':'W/m2','dims':('time','hru',),'precision':4},
              'emissi':{'description':'Land surface albedo','units':' ','dims':('time','hru',),'precision':4},
-             'cosz':{'description':'Cosine of solar zenith angle','units':' ','dims':('time','hru',),'precision':4},
+             'cosz':{'description':'Cosine of solar zenith angle','units':' ','dims':('time','hru',),'precision':8},
              'azimuth':{'description':'Solar azimuth angle','units':' ','dims':('time','hru',),'precision':4},
              'swdn_toa':{'description':'Solar shortwave radiation down at TOA','units':'W/m2','dims':('time','hru',),'precision':4},
              'qbase':{'description':'Excess runoff','units':'mm/s','dims':('time','hru',),'precision':4},
