@@ -431,7 +431,7 @@ def plot_maps(lon, lat, all_maps, output, dpi):
             axis.set_ylabel("Latitude")
             fig.colorbar(image, ax=axis, label=label, shrink=0.86)
 
-    fig.suptitle(f"Seasonal Surface Soil Moisture — {PASS_DESCRIPTION}", fontsize=20, fontweight="bold")
+    #fig.suptitle(f"Seasonal Surface Soil Moisture — {PASS_DESCRIPTION}", fontsize=20, fontweight="bold")
     fig.tight_layout(rect=(0, 0, 1, 0.985))
     fig.savefig(output, dpi=dpi, bbox_inches="tight", facecolor="white")
     plt.close(fig)
@@ -464,7 +464,7 @@ def plot_histograms(all_maps, output, dpi, bins):
             f"r = {correlation_text}\n"
             f"n = {n:,}",
             transform=axis.transAxes, ha="right", va="top",
-            fontsize=10
+            fontsize=10,
             bbox={"boxstyle": "round", "facecolor": "lightgray",
                   "edgecolor": "black", "alpha": 0.6},
         )
@@ -472,7 +472,7 @@ def plot_histograms(all_maps, output, dpi, bins):
         axis.set_xlabel("HB-NMP 3D − SMAP SMC [m³/m³]")
         axis.set_ylabel("Probability density")
 
-    fig.suptitle(f"Seasonal SMC Difference Distributions — {PASS_DESCRIPTION}", fontsize=19, fontweight="bold")
+    #fig.suptitle(f"Seasonal SMC Difference Distributions — {PASS_DESCRIPTION}", fontsize=19, fontweight="bold")
     fig.tight_layout(rect=(0, 0, 1, 0.97))
     fig.savefig(output, dpi=dpi, bbox_inches="tight", facecolor="white")
     plt.close(fig)

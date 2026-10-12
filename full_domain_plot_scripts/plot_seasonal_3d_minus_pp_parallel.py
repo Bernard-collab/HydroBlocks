@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot paired HydroBlocks variables' seasonal 3D-minus-PP differences.
+"""Plot paired HB-NMP variables' seasonal 3D-minus-PP differences.
 
 The script reads matching daily postprocessed NetCDF files from
 <experiment>/postprocess/output_dir, calculates paired seasonal means, and
@@ -33,6 +33,17 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
+
+# Plot figure text specifications
+plt.rcParams.update({
+    "font.family": "DejaVu Sans",
+    "font.size": 15,
+    "axes.titlesize": 17,
+    "axes.titleweight": "bold",
+    "axes.labelsize": 15,
+    "xtick.labelsize": 13,
+    "ytick.labelsize": 13,
+})
 import netCDF4 as nc
 import numpy as np
 
@@ -59,7 +70,7 @@ DEFAULT_EDIR_PP = (
 )
 
 DEFAULT_OUTDIR = (
-    "/scratch/alpine/battobrah@xsede.org/HydroBlocks_Enrico_dev/"
+    "/scratch/alpine/battobrah@xsede.org/HB-NMP_Enrico_dev/"
     "validation_plots/3D_minus_PP"
 )
 
@@ -191,15 +202,15 @@ PAIRS = (
     ("longwave", "lwdn_3d", "lwnet"),
     ("soil_moisture", "smc", "totsmc"),
     ("snow_amount", "swe", "snowh"),
-    ("snow_state", "fsno", "swe"),
+    ("snow_state", "fsno", "qsnow"),
     ("near_surface_temperature", "t2mb", "t2mv"),
     ("surface_temperature", "trad", "tv"),
     ("turbulent_fluxes", "sh", "lh"),
     ("surface_water", "qsurface", "runoff"),
-    ("snow_temperature_albedo", "snow_t", "salb"),
+    ("snow_temperature_albedo", "trad", "salb"),
 )
 
-# Fixed symmetric linear color limits for variables shown by Hao et al. (2025).
+# Fixed symmetric linear color limits for variables shown as done by Hao et al. (2025)
 # These limits affect map colors only; values outside them saturate at the
 # endpoint color and remain available to the histogram and statistics.
 FIXED_MAP_LIMITS = {
@@ -207,15 +218,21 @@ FIXED_MAP_LIMITS = {
     "swnet": 30.0,
     "lwdn_3d": 30.0,
     "lwnet": 30.0,
-    "t2mb": 1.0,
+    "t2mb": 0.15,
     "t2mv": 1.0,
     "trad": 1.0,
     "tv": 1.0,
     "sh": 30.0,
-    "lh": 10.0,
-    "fsno": 0.10,
+    "lh": 3.0,
+    "fsno": 0.03,
+    "qsnow": 2.0e-7,
+    "snowh": 0.05,
     "smc": 0.03,
-    "swe": 30.0,
+    "totsmc": 0.01,
+    "swe": 10.0,
+    "salb": 0.10,
+    "qsurface": 0.002,
+    "runoff": 0.005,
 }
 
 # Fixed symmetric histogram limits. Each variable uses the same bin edges in
@@ -226,25 +243,25 @@ FIXED_HISTOGRAM_LIMITS = {
     "swnet": 30.0,
     "lwdn_3d": 30.0,
     "lwnet": 30.0,
-    "totsmc": 0.10,
+    "totsmc": 0.01,
     "smc": 0.04,
     "swe": 10.0,
-    "snowh": 0.30,
+    "snowh": 0.10,
     "fsno": 0.06,
-    "qsnow": 0.001,
+    "qsnow": 2.0e-7,
     "snow_t": 3.0,
-    "t2mb": 1.0,
+    "t2mb": 0.2,
     "t2mv": 1.0,
     "trad": 1.0,
-    "tv": 1.0,
+   # "tv": 4.0,
     "sh": 30.0,
-    "lh": 10.0,
+    "lh": 3.0,
     "salb": 0.10,
-    "qsurface": 0.001,
-    "runoff": 0.001,
+    "qsurface": 0.002,
+    "runoff": 0.005,
 }
 
-SNOW_MASK_THRESHOLD = 0.05
+SNOW_MASK_THRESHOLD = 0.00
 SNOW_MASKED_VARIABLES = ("fsno", "swe")
 
 
@@ -264,7 +281,6 @@ def arguments():
         "--border",
         type=float,
         default=0.02,
-        help="Fractional geographic padding around the valid map footprint",
     )
     parser.add_argument(
         "--workers",
@@ -306,7 +322,8 @@ def daily_files(edir, start_year, end_year):
         raise FileNotFoundError(f"No postprocessed daily NetCDF files found in {folder}")
     return files
 
-
+# Find the first matching variable name in a NetCDF file (handles 3D vs PP naming, e.g. swdn_3d vs swdn).
+# Returns (variable, name); raises KeyError listing available variables if none are found.
 def find_variable(dataset, candidates, experiment_name):
     for candidate in candidates:
         if candidate in dataset.variables:
@@ -317,7 +334,8 @@ def find_variable(dataset, candidates, experiment_name):
         f"Available root variables: {available}"
     )
 
-
+# Return the position of the first matching dimension name (case-insensitive), or None if absent.
+# e.g. axis_index(("time", "hru", "soil"), ("soil",)) -> 2
 def axis_index(dimensions, candidates):
     lowered = [name.lower() for name in dimensions]
     for candidate in candidates:
@@ -723,11 +741,12 @@ def plot_maps(lon, lat, seasonal, specifications, output, dpi, border):
         bottom=0.07,
         top=0.97,
         wspace=0.10,
-        hspace=0.18,
+        hspace=0.30,
     )
 
     for row, specification in enumerate(specifications):
         name = specification["name"]
+        display_name = "swdn" if name == "swdn_3d" else name
         unit = specification["unit"]
         differences = [seasonal[name][season]["difference"] for season in SEASONS]
         # Use a fixed paper-style range when defined. Values outside the range
@@ -747,7 +766,7 @@ def plot_maps(lon, lat, seasonal, specifications, output, dpi, border):
                 resample=False,
                 aspect="equal",
             )
-            axis.set_title(f"{name}: 3D − PP – {season}",fontweight="bold",)
+            axis.set_title(f"{display_name} – {season}",fontweight="bold",)
             axis.set_xlabel("Longitude [°]")
             axis.set_ylabel("Latitude [°]")
             axis.set_xlim(plot_xlim)
@@ -763,8 +782,12 @@ def plot_maps(lon, lat, seasonal, specifications, output, dpi, border):
                 fall_position.height,
             ]
         )
-        colorbar = fig.colorbar(image, cax=colorbar_axis, orientation="vertical")
-        colorbar.set_label(f"{name}: 3D − PP [{unit}]")
+        colorbar = fig.colorbar(
+            image, cax=colorbar_axis, orientation="vertical",
+            extend="both" if name in FIXED_MAP_LIMITS else "neither",
+            extendrect=False,
+        )
+        colorbar.set_label(f"{display_name}: 3D − PP [{unit}]")
 
     # Intentionally omit an overall title to match the SMC/FSNO map figure.
     fig.savefig(output, dpi=dpi, bbox_inches="tight", facecolor="white")
@@ -778,6 +801,7 @@ def plot_histograms(seasonal, specifications, output, dpi):
 
     for row, specification in enumerate(specifications):
         name = specification["name"]
+        display_name = {"swdn_3d": "swdn", "lwdn_3d": "lwdn"}.get(name, name)
         unit = specification["unit"]
         seasonal_differences = [
             seasonal[name][season]["difference"] for season in SEASONS
@@ -829,6 +853,7 @@ def plot_histograms(seasonal, specifications, output, dpi):
                 transform=axis.transAxes,
                 ha="right",
                 va="top",
+                fontsize=10,
                 bbox={
                     "boxstyle": "round",
                     "facecolor": "lightgray",
@@ -839,13 +864,10 @@ def plot_histograms(seasonal, specifications, output, dpi):
             if row == 0:
                 axis.set_title(season)
             if column == 0:
-                axis.set_ylabel(f"{name}\nProbability density")
+                axis.set_ylabel(f"{display_name}\nProbability density")
             axis.set_xlabel(f"3D − PP [{unit}]")
 
     pair_title = " and ".join(item["name"] for item in specifications)
-    fig.suptitle(
-        f"Seasonal 3D − PP Difference Distributions: {pair_title}"
-    )
     fig.subplots_adjust(left=0.07, right=0.99, bottom=0.08, top=0.91,
                         hspace=0.32, wspace=0.24)
     fig.savefig(output, dpi=dpi, bbox_inches="tight", facecolor="white")
@@ -861,6 +883,7 @@ def write_metrics(seasonal, specifications, output):
         )
         for specification in specifications:
             name = specification["name"]
+            display_name = {"swdn_3d": "swdn", "lwdn_3d": "lwdn"}.get(name, name)
             for season in SEASONS:
                 _, md, mad, rmse, correlation, n_valid = metrics(
                     seasonal[name][season]["three_d"],
