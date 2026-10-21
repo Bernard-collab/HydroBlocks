@@ -1072,7 +1072,16 @@ def Assign_Parameters_Semidistributed_svp(covariates,metadata,hydroblocks_info,O
   OUTPUT['parameters']['hru']['svf'][hru] = np.nanmean(covariates['svf'][idx])
   OUTPUT['parameters']['hru']['tvf'][hru] = np.nanmean(covariates['tvf'][idx])
   OUTPUT['parameters']['hru']['sdelev'][hru] = np.nanmean(covariates['sdelev'][idx])
-  OUTPUT['parameters']['hru']['aspect'][hru] = np.nanmean(covariates['aspect'][idx])
+  #OUTPUT['parameters']['hru']['aspect'][hru] = np.nanmean(covariates['aspect'][idx]) #Ben commented and replaced with x and y aspect
+  #Ben added start
+  x = OUTPUT['parameters']['hru']['x_aspect'][hru]
+  y = OUTPUT['parameters']['hru']['y_aspect'][hru]
+
+  if not np.isfinite(x + y) or np.hypot(x, y) <= 1e-6:
+   raise ValueError(f"HRU {hru}: undefined circular aspect")
+
+  OUTPUT['parameters']['hru']['aspect'][hru] = np.arctan2(x, y)
+  #Be added end
   OUTPUT['parameters']['hru']['hor_n'][hru] = np.nanmean(covariates['hor_n'][idx])
   OUTPUT['parameters']['hru']['hor_e'][hru] = np.nanmean(covariates['hor_e'][idx])
   OUTPUT['parameters']['hru']['hor_s'][hru] = np.nanmean(covariates['hor_s'][idx])
@@ -1586,10 +1595,10 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
 # ============================
 def get_precip_chi(month):
     chi_table = {
-        1: 0.70, 2: 0.70, 3: 0.70,
-        4: 0.60, 5: 0.50, 6: 0.40, 
-        7: 0.40, 8: 0.40, 9: 0.40,
-        10: 0.50, 11: 0.60, 12: 0.70
+        1: 0.35, 2: 0.35, 3: 0.35,
+        4: 0.30, 5: 0.25, 6: 0.20, 
+        7: 0.20, 8: 0.20, 9: 0.20,
+        10: 0.25, 11: 0.30, 12: 0.35
     }
     return chi_table[month]
 
