@@ -509,7 +509,7 @@ subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
                   CROPCAT,&
                   PLANTING,  HARVEST,SEASON_GDD,&
                   IDVEG, IOPT_CRS,  IOPT_BTR, IOPT_RUN, IOPT_SFC, IOPT_FRZ,  &
-                  IOPT_INF, IOPT_RAD,  IOPT_3DRAD,  IOPT_ALB, IOPT_SNF,IOPT_TBOT, IOPT_STC, &
+                  IOPT_INF, IOPT_RAD,  IOPT_3DRAD, IOPT_SOLAR_MIDPOINT, IOPT_ALB, IOPT_SNF,IOPT_TBOT, IOPT_STC, &
                   IOPT_GLA, IOPT_RSF, IOPT_CROP,            &
                   IZ0TLND, SF_URBAN_PHYSICS,&
                   TSK,      HFX,      QFX,        LH,   GRDFLX,    SMSTAV, &
@@ -560,6 +560,7 @@ subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
  USE module_sf_noahmpdrv, only: noahmplsm,noahmp_urban
 
  implicit none
+ INTEGER, INTENT(IN) :: IOPT_SOLAR_MIDPOINT
 
  !I/O
  integer,intent(in) :: nhru
@@ -985,7 +986,7 @@ kte = 2
       !  CALL CALC_DECLIN(NOWDATE,XLAT(I), XLONG(I),COSZEN(I),JULIAN)
       !ELSE
         CALL CALC_DECLIN(NOWDATE,XLAT(I), XLONG(I),COSZIN(I),AZIMUTH(I), XSWDN_TOA(I), JULIAN, DT, &
-                         HRANG(I), DECLIN, GMT, JULDAY)
+                         HRANG(I), DECLIN, GMT, JULDAY, IOPT_SOLAR_MIDPOINT)
       !ENDIF
     enddo
 
@@ -1191,7 +1192,7 @@ endif
 		 XLAND,     XICE,XICE_THRES,  CROPCAT,                      & ! IN : Vegetation/Soil characteristics
 	       PLANTING,  HARVEST,SEASON_GDD,                               &
                  IDVEG, IOPT_CRS,  IOPT_BTR, IOPT_RUN, IOPT_SFC, IOPT_FRZ,  & ! IN : User options
-              IOPT_INF, IOPT_RAD,  IOPT_3DRAD,  IOPT_ALB, IOPT_SNF,IOPT_TBOT, IOPT_STC,  & ! IN : User options
+              IOPT_INF, IOPT_RAD,  IOPT_3DRAD, IOPT_ALB, IOPT_SNF,IOPT_TBOT, IOPT_STC,  & ! IN : User options
               IOPT_GLA, IOPT_RSF, IOPT_SOIL,IOPT_PEDO,IOPT_CROP,            & ! IN : User options
               IZ0TLND, SF_URBAN_PHYSICS,                                    & ! IN : User options
 	      SOILCOMP,  SOILCL1,  SOILCL2,   SOILCL3,  SOILCL4,            & ! IN : User options
@@ -1798,7 +1799,7 @@ end subroutine
 !------------------------------------------------------------------------------------
 
 SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, AZIMUTH, SWDN_TOA, JULIAN, DT, &
-                         HRANG_OUT, DECLIN_OUT, GMT_OUT, JULDAY_OUT )
+                         HRANG_OUT, DECLIN_OUT, GMT_OUT, JULDAY_OUT, IOPT_SOLAR_MIDPOINT)
 
   USE MODULE_DATE_UTILITIES
 !---------------------------------------------------------------------
@@ -1810,6 +1811,8 @@ SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, AZIMUTH, SWDN_TOA, 
    REAL,              INTENT(IN)  :: LATITUDE
    REAL,              INTENT(IN)  :: LONGITUDE
    REAL,              INTENT(IN) :: DT ! MODEL TIME STEP [s] - EZDEV ADDED
+   INTEGER, INTENT(IN) :: IOPT_SOLAR_MIDPOINT
+   REAL :: TIME_SHIFT
    REAL,              INTENT(OUT) :: COSZ
    REAL,              INTENT(OUT) :: AZIMUTH ! EZDEV ADDED
    REAL,              INTENT(OUT) :: SWDN_TOA ! EZDEV ADDED
@@ -1847,10 +1850,16 @@ SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, AZIMUTH, SWDN_TOA, 
    READ(NOWDATE(12:13), *) IHOUR
    READ(NOWDATE(15:16), *) IMINUTE
    READ(NOWDATE(18:19), *) ISECOND
-   GMT = REAL(IHOUR) + IMINUTE/60.0 + ISECOND/3600.0 + DT/3600.0 ! EDEV added time step
+   !GMT = REAL(IHOUR) + IMINUTE/60.0 + ISECOND/3600.0 + DT/3600.0 ! EDEV added time step
+
+   ! Solar geometry at the midpoint of the 3-h forcing window:
+   ! forcing used at NOWDATE covers [NOWDATE+DT, NOWDATE+2*DT] -> midpoint = NOWDATE + 1.5*DT
+   !GMT = REAL(IHOUR) + IMINUTE/60.0 + ISECOND/3600.0 + 1.5*DT/3600.0
+   TIME_SHIFT = DT
+   IF (IOPT_SOLAR_MIDPOINT == 1) TIME_SHIFT = 1.5*DT
+   GMT = REAL(IHOUR) + IMINUTE/60.0 + ISECOND/3600.0 + TIME_SHIFT/3600.0
    JULIAN = REAL(IDAY) + GMT/24.
    JULDAY = IDAY
-
 !
 ! FOR SHORT WAVE RADIATION
 
@@ -1869,7 +1878,10 @@ SUBROUTINE CALC_DECLIN ( NOWDATE, LATITUDE, LONGITUDE, COSZ, AZIMUTH, SWDN_TOA, 
    DECLIN=ASIN(ARG)
 
    !TLOCTIM = REAL(IHOUR) + REAL(IMINUTE)/60.0 + REAL(ISECOND)/3600.0 + LONGITUDE/15.0 ! LOCAL TIME IN HOURS
-   TLOCTIM = REAL(IHOUR) + REAL(IMINUTE)/60.0 + REAL(ISECOND)/3600.0 + LONGITUDE/15.0 + DT/3600.0 ! LOCAL TIME IN HOURS - EZDEV added time step to match forc
+   !BEN commented this
+   !TLOCTIM = REAL(IHOUR) + REAL(IMINUTE)/60.0 + REAL(ISECOND)/3600.0 + LONGITUDE/15.0 + DT/3600.0 ! LOCAL TIME IN HOURS - EZDEV added time step to match forc
+   ! BEN MIDPOINT SENSITIVITY TEST - replaced the above with the below ensures the declination and solar hour angle use the same shifted time
+   TLOCTIM = REAL(IHOUR) + REAL(IMINUTE)/60.0 + REAL(ISECOND)/3600.0 + LONGITUDE/15.0 + TIME_SHIFT/3600.0
    TLOCTIM = AMOD(TLOCTIM+24.0, 24.0)
    HRANG=15.*(TLOCTIM-12.)*DEGRAD
    COSZ=SIN(LATITUDE*DEGRAD)*SIN(DECLIN)+COS(LATITUDE*DEGRAD)*COS(DECLIN)*COS(HRANG)

@@ -888,8 +888,8 @@ contains
      SNEQV = 0.0
     END IF
 
-    IF(SWDOWN.NE.0.) THEN
-      ALBEDO = FSR / SWDOWN
+    IF(SWDN_3D.NE.0.) THEN
+      ALBEDO = FSR / SWDN_3D
     ELSE
       ALBEDO = -999.9
     END IF
@@ -1140,6 +1140,7 @@ contains
 
      ! update total downward radiation
      SWDN_3D = SOLAD(1)+SOLAD(2)+SOLAI(1)+SOLAI(2)
+     !SWDOWN = SWDN_3D
      ! update total longwave down
      
       ! ------------ EZDEV: END 3DRAD correction
