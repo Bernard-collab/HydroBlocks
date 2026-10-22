@@ -213,7 +213,7 @@ def plot_raw_cid_swdn(path_3d, path_pp, times, hrus, cids,
 def _raw_times(dataset, start, step, count):
     candidates=[dataset]+list(dataset.groups.values())
     for group in candidates:
-        for name in ('time','t'):
+        for name in ('date', 'time', 't'):
             if name not in group.variables: continue
             v=group.variables[name]
             if v.ndim==1 and len(v)==count and 'since' in str(getattr(v,'units','')):

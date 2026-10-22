@@ -9,7 +9,7 @@ creates:
 2. A matching 2-by-4 histogram figure for each variable pair.
 3. One CSV table containing MD, MAD, RMSE, Pearson r, and valid-pixel count.
 
-For 3D radiation, swdn_3d is compared with PP swdn and lwdn_3d is
+For 3D radiation, swdn_3d is compared with PP swdn_3d and lwdn_3d is
 compared with PP lwdn. Other variables use the same name in both simulations.
 
 Example:
@@ -48,12 +48,7 @@ import netCDF4 as nc
 import numpy as np
 
 
-SEASONS = {
-    "Winter": (12, 1, 2),
-    "Spring": (3, 4, 5),
-    "Summer": (6, 7, 8),
-    "Fall": (9, 10, 11),
-}
+SEASONS = {'Winter': (12, 1, 2), 'Spring': (3, 4, 5), 'Summer': (6, 7, 8), 'Fall': (9, 10, 11)}
 
 DEFAULT_EDIR_3D = (
     "/scratch/alpine/battobrah@xsede.org/Rice_NMT_Snow/upper_colorado/"
@@ -69,132 +64,29 @@ DEFAULT_EDIR_PP = (
     "full_domain_downscaled_test"
 )
 
-DEFAULT_OUTDIR = (
-    "/scratch/alpine/battobrah@xsede.org/HB-NMP_Enrico_dev/"
-    "validation_plots/3D_minus_PP"
-)
+DEFAULT_OUTDIR = '/scratch/alpine/battobrah@xsede.org/HB-NMP_Enrico_dev/validation_plots/3D_minus_PP'
 
 VARIABLES = (
-    {
-        "name": "swdn_3d",
-        "three_d": ("swdn_3d",),
-        "pp": ("swdn",),
-        "unit": "W m$^{-2}$",
-    },
-    {
-        "name": "swnet",
-        "three_d": ("swnet",),
-        "pp": ("swnet",),
-        "unit": "W m$^{-2}$",
-    },
-    {
-        "name": "lwdn_3d",
-        "three_d": ("lwdn_3d",),
-        "pp": ("lwdn",),
-        "unit": "W m$^{-2}$",
-    },
-    {
-        "name": "lwnet",
-        "three_d": ("lwnet",),
-        "pp": ("lwnet",),
-        "unit": "W m$^{-2}$",
-    },
-    {
-        "name": "totsmc",
-        "three_d": ("totsmc",),
-        "pp": ("totsmc",),
-        "unit": "m$^3$ m$^{-3}$",
-    },
-    {
-        "name": "smc",
-        "three_d": ("smc",),
-        "pp": ("smc",),
-        "unit": "m$^3$ m$^{-3}$",
-    },
-    {
-        "name": "swe",
-        "three_d": ("swe",),
-        "pp": ("swe",),
-        "unit": "mm",
-    },
-    {
-        "name": "snowh",
-        "three_d": ("snowh",),
-        "pp": ("snowh",),
-        "unit": "m",
-    },
-    {
-        "name": "fsno",
-        "three_d": ("fsno",),
-        "pp": ("fsno",),
-        "unit": "unitless",
-    },
-    {
-        "name": "qsnow",
-        "three_d": ("qsnow",),
-        "pp": ("qsnow",),
-        "unit": "mm s$^{-1}$",
-    },
-    {
-        "name": "snow_t",
-        "three_d": ("snow_t",),
-        "pp": ("snow_t",),
-        "unit": "K",
-    },
-    {
-        "name": "t2mb",
-        "three_d": ("t2mb",),
-        "pp": ("t2mb",),
-        "unit": "K",
-    },
-    {
-        "name": "t2mv",
-        "three_d": ("t2mv",),
-        "pp": ("t2mv",),
-        "unit": "K",
-    },
-    {
-        "name": "trad",
-        "three_d": ("trad",),
-        "pp": ("trad",),
-        "unit": "K",
-    },
-    {
-        "name": "tv",
-        "three_d": ("tv",),
-        "pp": ("tv",),
-        "unit": "K",
-    },
-    {
-        "name": "sh",
-        "three_d": ("sh",),
-        "pp": ("sh",),
-        "unit": "W m$^{-2}$",
-    },
-    {
-        "name": "lh",
-        "three_d": ("lh",),
-        "pp": ("lh",),
-        "unit": "W m$^{-2}$",
-    },
-    {
-        "name": "salb",
-        "three_d": ("salb",),
-        "pp": ("salb",),
-        "unit": "unitless",
-    },
-    {
-        "name": "qsurface",
-        "three_d": ("qsurface",),
-        "pp": ("qsurface",),
-        "unit": "mm s$^{-1}$",
-    },
-    {
-        "name": "runoff",
-        "three_d": ("runoff",),
-        "pp": ("runoff",),
-        "unit": "mm s$^{-1}$",
-    },
+    {'name': 'swdn_3d', 'three_d': ('swdn_3d',), 'pp': ('swdn_3d',), 'unit': 'W m$^{-2}$'},
+    {'name': 'swnet', 'three_d': ('swnet',), 'pp': ('swnet',), 'unit': 'W m$^{-2}$'},
+    {'name': 'lwdn_3d', 'three_d': ('lwdn_3d',), 'pp': ('lwdn',), 'unit': 'W m$^{-2}$'},
+    {'name': 'lwnet', 'three_d': ('lwnet',), 'pp': ('lwnet',), 'unit': 'W m$^{-2}$'},
+    {'name': 'totsmc', 'three_d': ('totsmc',), 'pp': ('totsmc',), 'unit': 'm$^3$ m$^{-3}$'},
+    {'name': 'smc', 'three_d': ('smc',), 'pp': ('smc',), 'unit': 'm$^3$ m$^{-3}$'},
+    {'name': 'swe', 'three_d': ('swe',), 'pp': ('swe',), 'unit': 'mm'},
+    {'name': 'snowh', 'three_d': ('snowh',), 'pp': ('snowh',), 'unit': 'm'},
+    {'name': 'fsno', 'three_d': ('fsno',), 'pp': ('fsno',), 'unit': 'unitless'},
+    {'name': 'qsnow', 'three_d': ('qsnow',), 'pp': ('qsnow',), 'unit': 'mm s$^{-1}$'},
+    {'name': 'snow_t', 'three_d': ('snow_t',), 'pp': ('snow_t',), 'unit': 'K'},
+    {'name': 't2mb', 'three_d': ('t2mb',), 'pp': ('t2mb',), 'unit': 'K'},
+    {'name': 't2mv', 'three_d': ('t2mv',), 'pp': ('t2mv',), 'unit': 'K'},
+    {'name': 'trad', 'three_d': ('trad',), 'pp': ('trad',), 'unit': 'K'},
+    {'name': 'tv', 'three_d': ('tv',), 'pp': ('tv',), 'unit': 'K'},
+    {'name': 'sh', 'three_d': ('sh',), 'pp': ('sh',), 'unit': 'W m$^{-2}$'},
+    {'name': 'lh', 'three_d': ('lh',), 'pp': ('lh',), 'unit': 'W m$^{-2}$'},
+    {'name': 'salb', 'three_d': ('salb',), 'pp': ('salb',), 'unit': 'unitless'},
+    {'name': 'qsurface', 'three_d': ('qsurface',), 'pp': ('qsurface',), 'unit': 'mm s$^{-1}$'},
+    {'name': 'runoff', 'three_d': ('runoff',), 'pp': ('runoff',), 'unit': 'mm s$^{-1}$'},
 )
 
 PAIRS = (
@@ -207,7 +99,7 @@ PAIRS = (
     ("surface_temperature", "trad", "tv"),
     ("turbulent_fluxes", "sh", "lh"),
     ("surface_water", "qsurface", "runoff"),
-    ("snow_temperature_albedo", "trad", "salb"),
+    ("snow_temperature_albedo", "snow_t", "salb"),
 )
 
 # Fixed symmetric linear color limits for variables shown as done by Hao et al. (2025)
@@ -267,21 +159,13 @@ SNOW_MASKED_VARIABLES = ("fsno", "swe")
 
 def arguments():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--edir-3d", default=DEFAULT_EDIR_3D, help="3D experiment directory"
-    )
-    parser.add_argument(
-        "--edir-pp", default=DEFAULT_EDIR_PP, help="PP experiment directory"
-    )
+    parser.add_argument('--edir-3d', default=DEFAULT_EDIR_3D, help='3D experiment directory')
+    parser.add_argument('--edir-pp', default=DEFAULT_EDIR_PP, help='PP experiment directory')
     parser.add_argument("--start-year", type=int, default=2014)
     parser.add_argument("--end-year", type=int, default=2024)
     parser.add_argument("--outdir", default=DEFAULT_OUTDIR)
     parser.add_argument("--dpi", type=int, default=300)
-    parser.add_argument(
-        "--border",
-        type=float,
-        default=0.02,
-    )
+    parser.add_argument('--border', type=float, default=0.02)
     parser.add_argument(
         "--workers",
         type=int,
@@ -329,10 +213,7 @@ def find_variable(dataset, candidates, experiment_name):
         if candidate in dataset.variables:
             return dataset.variables[candidate], candidate
     available = ", ".join(sorted(dataset.variables))
-    raise KeyError(
-        f"None of {candidates} found in {experiment_name}. "
-        f"Available root variables: {available}"
-    )
+    raise KeyError(f'None of {candidates} found in {experiment_name}. Available root variables: {available}')
 
 # Return the position of the first matching dimension name (case-insensitive), or None if absent.
 # e.g. axis_index(("time", "hru", "soil"), ("soil",)) -> 2
@@ -351,10 +232,7 @@ def read_time_lat_lon(variable, soil_layer):
     lat_axis = axis_index(dimensions, ("lat", "latitude", "y"))
     lon_axis = axis_index(dimensions, ("lon", "longitude", "x"))
     if None in (time_axis, lat_axis, lon_axis):
-        raise ValueError(
-            f"Cannot identify time/latitude/longitude axes for "
-            f"{variable.name}: {variable.dimensions}"
-        )
+        raise ValueError(f'Cannot identify time/latitude/longitude axes for {variable.name}: {variable.dimensions}')
 
     selection = []
     retained_dimensions = []
@@ -378,20 +256,11 @@ def read_time_lat_lon(variable, soil_layer):
 
 
 def read_coordinates(dataset):
-    lon_name = next(
-        (name for name in ("lon", "longitude", "x") if name in dataset.variables),
-        None,
-    )
-    lat_name = next(
-        (name for name in ("lat", "latitude", "y") if name in dataset.variables),
-        None,
-    )
+    lon_name = next((name for name in ('lon', 'longitude', 'x') if name in dataset.variables), None)
+    lat_name = next((name for name in ('lat', 'latitude', 'y') if name in dataset.variables), None)
     if lon_name is None or lat_name is None:
         raise KeyError("Postprocessed files must contain lon and lat coordinates")
-    return (
-        np.asarray(dataset.variables[lon_name][:], dtype=float),
-        np.asarray(dataset.variables[lat_name][:], dtype=float),
-    )
+    return (np.asarray(dataset.variables[lon_name][:], dtype=float), np.asarray(dataset.variables[lat_name][:], dtype=float))
 
 
 def initialise_accumulators(shape, specifications):
@@ -423,37 +292,23 @@ def process_date_chunk(
 
     for key, file_3d, file_pp in date_records:
         date = datetime.strptime(key, "%Y%m%d")
-        season = next(
-            name for name, months in SEASONS.items() if date.month in months
-        )
+        season = next((name for name, months in SEASONS.items() if date.month in months))
 
         with nc.Dataset(file_3d) as ds_3d, nc.Dataset(file_pp) as ds_pp:
             for specification in specifications:
                 name = specification["name"]
-                var_3d, actual_3d = find_variable(
-                    ds_3d, specification["three_d"], "3D output"
-                )
-                var_pp, actual_pp = find_variable(
-                    ds_pp, specification["pp"], "PP output"
-                )
+                var_3d, actual_3d = find_variable(ds_3d, specification['three_d'], '3D output')
+                var_pp, actual_pp = find_variable(ds_pp, specification['pp'], 'PP output')
                 resolved_names.setdefault(name, (actual_3d, actual_pp))
 
                 data_3d = read_time_lat_lon(var_3d, soil_layer)
                 data_pp = read_time_lat_lon(var_pp, soil_layer)
                 if data_3d.shape != data_pp.shape:
-                    raise ValueError(
-                        f"Shape mismatch for {name} on {key}: "
-                        f"3D={data_3d.shape}, PP={data_pp.shape}"
-                    )
+                    raise ValueError(f'Shape mismatch for {name} on {key}: 3D={data_3d.shape}, PP={data_pp.shape}')
 
                 data_3d = data_3d[:, lat_order_3d, :][:, :, lon_order_3d]
                 data_pp = data_pp[:, lat_order_pp, :][:, :, lon_order_pp]
-                valid = (
-                    np.isfinite(data_3d)
-                    & np.isfinite(data_pp)
-                    & (data_3d > -9000.0)
-                    & (data_pp > -9000.0)
-                )
+                valid = np.isfinite(data_3d) & np.isfinite(data_pp) & (data_3d > -9000.0) & (data_pp > -9000.0)
 
                 if season not in partial[name]:
                     shape = data_3d.shape[1:]
@@ -463,12 +318,8 @@ def process_date_chunk(
                         "count": np.zeros(shape, dtype=np.int64),
                     }
                 target = partial[name][season]
-                target["sum_3d"] += np.sum(
-                    np.where(valid, data_3d, 0.0), axis=0
-                )
-                target["sum_pp"] += np.sum(
-                    np.where(valid, data_pp, 0.0), axis=0
-                )
+                target["sum_3d"] += np.sum(np.where(valid, data_3d, 0.0), axis=0)
+                target["sum_pp"] += np.sum(np.where(valid, data_pp, 0.0), axis=0)
                 target["count"] += np.sum(valid, axis=0)
 
     return partial, resolved_names, len(date_records)
@@ -488,17 +339,13 @@ def read_seasonal_means(args, specifications):
         flush=True,
     )
 
-    with nc.Dataset(files_3d[common_dates[0]]) as ds_3d, nc.Dataset(
-        files_pp[common_dates[0]]
-    ) as ds_pp:
+    with nc.Dataset(files_3d[common_dates[0]]) as ds_3d, nc.Dataset(files_pp[common_dates[0]]) as ds_pp:
         lon_3d, lat_3d = read_coordinates(ds_3d)
         lon_pp, lat_pp = read_coordinates(ds_pp)
 
     if lon_3d.shape != lon_pp.shape or lat_3d.shape != lat_pp.shape:
         raise ValueError("3D and PP postprocessed grids have different dimensions")
-    if not np.allclose(np.sort(lon_3d), np.sort(lon_pp)) or not np.allclose(
-        np.sort(lat_3d), np.sort(lat_pp)
-    ):
+    if not np.allclose(np.sort(lon_3d), np.sort(lon_pp)) or not np.allclose(np.sort(lat_3d), np.sort(lat_pp)):
         raise ValueError("3D and PP postprocessed coordinate values do not match")
 
     lon_order_3d = np.argsort(lon_3d)
@@ -515,25 +362,14 @@ def read_seasonal_means(args, specifications):
 
     # Several chunks per worker balance slow files while limiting IPC overhead.
     chunk_size = max(1, (len(records) + workers * 4 - 1) // (workers * 4))
-    chunks = [
-        records[start : start + chunk_size]
-        for start in range(0, len(records), chunk_size)
-    ]
-    print(
-        f"Daily-file readers: {workers}; chunks: {len(chunks)}; "
-        f"approximately {chunk_size} days/chunk",
-        flush=True,
-    )
+    chunks = [records[start:start + chunk_size] for start in range(0, len(records), chunk_size)]
+    print(f'Daily-file readers: {workers}; chunks: {len(chunks)}; approximately {chunk_size} days/chunk', flush=True)
 
     def merge_partial(partial, names):
         for name, resolved in names.items():
             if name not in resolved_names:
                 resolved_names[name] = resolved
-                print(
-                    f"{name}: 3D variable={resolved[0]}; "
-                    f"PP variable={resolved[1]}",
-                    flush=True,
-                )
+                print(f'{name}: 3D variable={resolved[0]}; PP variable={resolved[1]}', flush=True)
         for name, seasons in partial.items():
             for season, source in seasons.items():
                 target = accumulators[name][season]
@@ -555,15 +391,10 @@ def read_seasonal_means(args, specifications):
             )
             merge_partial(partial, names)
             completed_days += count
-            print(
-                f"Processed {completed_days}/{len(common_dates)} matched days",
-                flush=True,
-            )
+            print(f'Processed {completed_days}/{len(common_dates)} matched days', flush=True)
     else:
         context = mp.get_context("spawn")
-        with ProcessPoolExecutor(
-            max_workers=workers, mp_context=context
-        ) as executor:
+        with ProcessPoolExecutor(max_workers=workers, mp_context=context) as executor:
             futures = [
                 executor.submit(
                     process_date_chunk,
@@ -581,10 +412,7 @@ def read_seasonal_means(args, specifications):
                 partial, names, count = future.result()
                 merge_partial(partial, names)
                 completed_days += count
-                print(
-                    f"Processed {completed_days}/{len(common_dates)} matched days",
-                    flush=True,
-                )
+                print(f'Processed {completed_days}/{len(common_dates)} matched days', flush=True)
 
     seasonal = {}
     for specification in specifications:
@@ -594,35 +422,17 @@ def read_seasonal_means(args, specifications):
             source = accumulators[name][season]
             mean_3d = np.full(source["count"].shape, np.nan)
             mean_pp = np.full(source["count"].shape, np.nan)
-            np.divide(
-                source["sum_3d"],
-                source["count"],
-                out=mean_3d,
-                where=source["count"] > 0,
-            )
-            np.divide(
-                source["sum_pp"],
-                source["count"],
-                out=mean_pp,
-                where=source["count"] > 0,
-            )
-            seasonal[name][season] = {
-                "three_d": mean_3d,
-                "pp": mean_pp,
-                "difference": mean_3d - mean_pp,
-            }
+            np.divide(source['sum_3d'], source['count'], out=mean_3d, where=source['count'] > 0)
+            np.divide(source['sum_pp'], source['count'], out=mean_pp, where=source['count'] > 0)
+            seasonal[name][season] = {'three_d': mean_3d, 'pp': mean_pp, 'difference': mean_3d - mean_pp}
 
     # Follow the snow-domain screening used by Hao et al. Build one mask from
     # annual mean FSNO and apply the same spatial footprint to every season.
     # Pixels remain when either simulation has annual FSNO >= 0.05.
     if "fsno" in seasonal:
-        annual_sum_3d = np.zeros_like(
-            accumulators["fsno"][next(iter(SEASONS))]["sum_3d"]
-        )
+        annual_sum_3d = np.zeros_like(accumulators['fsno'][next(iter(SEASONS))]['sum_3d'])
         annual_sum_pp = np.zeros_like(annual_sum_3d)
-        annual_count = np.zeros_like(
-            accumulators["fsno"][next(iter(SEASONS))]["count"]
-        )
+        annual_count = np.zeros_like(accumulators['fsno'][next(iter(SEASONS))]['count'])
         for season in SEASONS:
             annual_sum_3d += accumulators["fsno"][season]["sum_3d"]
             annual_sum_pp += accumulators["fsno"][season]["sum_pp"]
@@ -630,24 +440,12 @@ def read_seasonal_means(args, specifications):
 
         annual_fsno_3d = np.full(annual_count.shape, np.nan)
         annual_fsno_pp = np.full(annual_count.shape, np.nan)
-        np.divide(
-            annual_sum_3d,
-            annual_count,
-            out=annual_fsno_3d,
-            where=annual_count > 0,
-        )
-        np.divide(
-            annual_sum_pp,
-            annual_count,
-            out=annual_fsno_pp,
-            where=annual_count > 0,
-        )
+        np.divide(annual_sum_3d, annual_count, out=annual_fsno_3d, where=annual_count > 0)
+        np.divide(annual_sum_pp, annual_count, out=annual_fsno_pp, where=annual_count > 0)
         snow_mask = (
-            np.isfinite(annual_fsno_3d)
-            & np.isfinite(annual_fsno_pp)
+            np.isfinite(annual_fsno_3d) & np.isfinite(annual_fsno_pp)
             & (
-                (annual_fsno_3d >= SNOW_MASK_THRESHOLD)
-                | (annual_fsno_pp >= SNOW_MASK_THRESHOLD)
+                (annual_fsno_3d >= SNOW_MASK_THRESHOLD) | (annual_fsno_pp >= SNOW_MASK_THRESHOLD)
             )
         )
         print(
@@ -662,11 +460,7 @@ def read_seasonal_means(args, specifications):
                 if snow_name not in seasonal:
                     continue
                 for field in ("three_d", "pp", "difference"):
-                    seasonal[snow_name][season][field] = np.where(
-                        snow_mask,
-                        seasonal[snow_name][season][field],
-                        np.nan,
-                    )
+                    seasonal[snow_name][season][field] = np.where(snow_mask, seasonal[snow_name][season][field], np.nan)
     return lon, lat, seasonal
 
 
@@ -702,12 +496,7 @@ def plot_maps(lon, lat, seasonal, specifications, output, dpi, border):
     if border < 0:
         raise ValueError("--border must be zero or greater")
 
-    extent = [
-        float(np.nanmin(lon)),
-        float(np.nanmax(lon)),
-        float(np.nanmin(lat)),
-        float(np.nanmax(lat)),
-    ]
+    extent = [float(np.nanmin(lon)), float(np.nanmax(lon)), float(np.nanmin(lat)), float(np.nanmax(lat))]
 
     # Frame the figure around the union of valid pixels, with a small border.
     valid_domain = None
@@ -729,20 +518,11 @@ def plot_maps(lon, lat, seasonal, specifications, output, dpi, border):
     plot_xlim = (xmin - pad_x, xmax + pad_x)
     plot_ylim = (ymin - pad_y, ymax + pad_y)
 
-    fig, axes = plt.subplots(
-        2, 4, figsize=(20, 9), sharex=False, sharey=False
-    )
+    fig, axes = plt.subplots(2, 4, figsize=(20, 9), sharex=False, sharey=False)
     cmap = plt.get_cmap("RdBu_r").copy()
     # Keep excluded/non-snow pixels visually quiet, as in the paper figures.
     cmap.set_bad("0.94")
-    fig.subplots_adjust(
-        left=0.045,
-        right=0.94,
-        bottom=0.07,
-        top=0.97,
-        wspace=0.10,
-        hspace=0.30,
-    )
+    fig.subplots_adjust(left=0.045, right=0.94, bottom=0.07, top=0.97, wspace=0.1, hspace=0.3)
 
     for row, specification in enumerate(specifications):
         name = specification["name"]
@@ -774,14 +554,7 @@ def plot_maps(lon, lat, seasonal, specifications, output, dpi, border):
 
         # Match the SMC/FSNO layout: one full-height colorbar beside each row.
         fall_position = axes[row, -1].get_position()
-        colorbar_axis = fig.add_axes(
-            [
-                fall_position.x1 + 0.006,
-                fall_position.y0,
-                0.008,
-                fall_position.height,
-            ]
-        )
+        colorbar_axis = fig.add_axes([fall_position.x1 + 0.006, fall_position.y0, 0.008, fall_position.height])
         colorbar = fig.colorbar(
             image, cax=colorbar_axis, orientation="vertical",
             extend="both" if name in FIXED_MAP_LIMITS else "neither",
@@ -803,14 +576,10 @@ def plot_histograms(seasonal, specifications, output, dpi):
         name = specification["name"]
         display_name = {"swdn_3d": "swdn", "lwdn_3d": "lwdn"}.get(name, name)
         unit = specification["unit"]
-        seasonal_differences = [
-            seasonal[name][season]["difference"] for season in SEASONS
-        ]
+        seasonal_differences = [seasonal[name][season]['difference'] for season in SEASONS]
         # Use one fixed linear range and the same 50 bins for every season.
         # Fall back to the complete range only for variables not listed above.
-        limit = FIXED_HISTOGRAM_LIMITS.get(
-            name, display_limit(seasonal_differences)
-        )
+        limit = FIXED_HISTOGRAM_LIMITS.get(name, display_limit(seasonal_differences))
         bin_edges = np.linspace(-limit, limit, 51)
         for column, season in enumerate(SEASONS):
             axis = axes[row, column]
@@ -824,22 +593,15 @@ def plot_histograms(seasonal, specifications, output, dpi):
 
             # The plotted distribution is restricted to the fixed visible
             # range. Metrics above are calculated from the complete array.
-            visible = difference[
-                (difference >= -limit) & (difference <= limit)
-            ]
+            visible = difference[(difference >= -limit) & (difference <= limit)]
             if visible.size:
                 axis.hist(visible, bins=bin_edges, density=True)
             else:
-                axis.text(
-                    0.5, 0.5, "No values within display range",
-                    transform=axis.transAxes, ha="center", va="center",
-                )
+                axis.text(0.5, 0.5, 'No values within display range', transform=axis.transAxes, ha='center', va='center')
             axis.set_xlim(-limit, limit)
             axis.axvline(0.0, linewidth=1, color="black")
             axis.axvline(md, linestyle="dashed", linewidth=3, color="darkred")
-            correlation_text = (
-                f"{correlation:.3f}" if np.isfinite(correlation) else "NA"
-            )
+            correlation_text = f'{correlation:.3f}' if np.isfinite(correlation) else 'NA'
             axis.text(
                 0.98,
                 0.98,
@@ -854,12 +616,7 @@ def plot_histograms(seasonal, specifications, output, dpi):
                 ha="right",
                 va="top",
                 fontsize=10,
-                bbox={
-                    "boxstyle": "round",
-                    "facecolor": "lightgray",
-                    "edgecolor": "black",
-                    "alpha": 0.6,
-                },
+                bbox={'boxstyle': 'round', 'facecolor': 'lightgray', 'edgecolor': 'black', 'alpha': 0.6},
             )
             if row == 0:
                 axis.set_title(season)
@@ -867,9 +624,8 @@ def plot_histograms(seasonal, specifications, output, dpi):
                 axis.set_ylabel(f"{display_name}\nProbability density")
             axis.set_xlabel(f"3D − PP [{unit}]")
 
-    pair_title = " and ".join(item["name"] for item in specifications)
-    fig.subplots_adjust(left=0.07, right=0.99, bottom=0.08, top=0.91,
-                        hspace=0.32, wspace=0.24)
+
+    fig.subplots_adjust(left=0.07, right=0.99, bottom=0.08, top=0.91, hspace=0.32, wspace=0.24)
     fig.savefig(output, dpi=dpi, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"Saved: {output}", flush=True)
@@ -878,29 +634,16 @@ def plot_histograms(seasonal, specifications, output, dpi):
 def write_metrics(seasonal, specifications, output):
     with open(output, "w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
-        writer.writerow(
-            ["variable", "season", "unit", "MD", "MAD", "RMSE", "r", "n"]
-        )
+        writer.writerow(['variable', 'season', 'unit', 'MD', 'MAD', 'RMSE', 'r', 'n'])
         for specification in specifications:
             name = specification["name"]
-            display_name = {"swdn_3d": "swdn", "lwdn_3d": "lwdn"}.get(name, name)
+
             for season in SEASONS:
                 _, md, mad, rmse, correlation, n_valid = metrics(
                     seasonal[name][season]["three_d"],
                     seasonal[name][season]["pp"],
                 )
-                writer.writerow(
-                    [
-                        name,
-                        season,
-                        specification["unit"],
-                        md,
-                        mad,
-                        rmse,
-                        correlation,
-                        n_valid,
-                    ]
-                )
+                writer.writerow([name, season, specification['unit'], md, mad, rmse, correlation, n_valid])
     print(f"Saved: {output}", flush=True)
 
 
@@ -908,53 +651,26 @@ def main():
     args = arguments()
     if args.end_year < args.start_year:
         raise ValueError("--end-year must not precede --start-year")
-    selected_pairs = PAIRS if "all" in args.pairs else tuple(
-        pair for pair in PAIRS if pair[0] in args.pairs
-    )
+    selected_pairs = PAIRS if 'all' in args.pairs else tuple((pair for pair in PAIRS if pair[0] in args.pairs))
     variable_names = {
         variable_name
         for _, first_name, second_name in selected_pairs
         for variable_name in (first_name, second_name)
     }
-    specifications = tuple(
-        item for item in VARIABLES if item["name"] in variable_names
-    )
+    specifications = tuple((item for item in VARIABLES if item['name'] in variable_names))
     specification_by_name = {item["name"]: item for item in specifications}
     os.makedirs(args.outdir, exist_ok=True)
     lon, lat, seasonal = read_seasonal_means(args, specifications)
 
     for pair_name, first_name, second_name in selected_pairs:
-        pair_specifications = (
-            specification_by_name[first_name],
-            specification_by_name[second_name],
-        )
+        pair_specifications = (specification_by_name[first_name], specification_by_name[second_name])
         suffix = f"{pair_name}_{args.start_year}_{args.end_year}"
-        map_output = os.path.join(
-            args.outdir, f"seasonal_3D_minus_PP_maps_{suffix}.png"
-        )
-        histogram_output = os.path.join(
-            args.outdir, f"seasonal_3D_minus_PP_histograms_{suffix}.png"
-        )
-        plot_maps(
-            lon,
-            lat,
-            seasonal,
-            pair_specifications,
-            map_output,
-            args.dpi,
-            args.border,
-        )
-        plot_histograms(
-            seasonal,
-            pair_specifications,
-            histogram_output,
-            args.dpi,
-        )
+        map_output = os.path.join(args.outdir, f'seasonal_3D_minus_PP_maps_{suffix}.png')
+        histogram_output = os.path.join(args.outdir, f'seasonal_3D_minus_PP_histograms_{suffix}.png')
+        plot_maps(lon, lat, seasonal, pair_specifications, map_output, args.dpi, args.border)
+        plot_histograms(seasonal, pair_specifications, histogram_output, args.dpi)
 
-    metrics_output = os.path.join(
-        args.outdir,
-        f"seasonal_3D_minus_PP_metrics_{args.start_year}_{args.end_year}.csv",
-    )
+    metrics_output = os.path.join(args.outdir, f'seasonal_3D_minus_PP_metrics_{args.start_year}_{args.end_year}.csv')
     write_metrics(seasonal, specifications, metrics_output)
 
 
