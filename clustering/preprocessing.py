@@ -406,6 +406,19 @@ def Prepare_Model_Input_Data(hydroblocks_info,metadata_file):
  # grp.createVariable('hru_min_dist','f4',('hru','hru'))#,zlib=True)
  # grp.variables['hru_min_dist'][:] = data['hru']['hru_min_dist']
 
+# Ben added for elevation correction - Save the HRU shortwave reference elevation and HRU-minus-reference elevation difference in metres.
+ for name in ('sw_elev_ref', 'sw_elev_delta'):
+  if name in data['parameters']['hru']:
+   variable = grp.createVariable(name, 'f4', ('hru',))
+   variable[:] = data['parameters']['hru'][name]
+   variable.units = 'm'
+   variable.reference_method = 'overlap-weighted SW cell means from available local DEM pixels'
+   variable.long_name = (
+       'shortwave reference elevation' if name == 'sw_elev_ref'
+       else 'HRU elevation minus shortwave reference elevation'
+   )
+#Ben add ends here
+
  #Write out the stream network info
  grp = fp.createGroup('stream_network')
  grp.createDimension('nc',data['stream_network']['slope'].size)
@@ -1463,6 +1476,39 @@ def Create_Clusters_And_Connections(workspace,wbd,output,input_dir,nhru,info,hyd
 
  return (OUTPUT,covariates)
 
+# Ben added - CORRECT SW DIRECT BASED ON ELEVATION 
+def shortwave_elevation_reference(dem, cell_map, hru_map, nhru):
+ """Return HRU and overlap-weighted forcing-cell elevations in metres."""
+ dem = np.ma.asarray(dem, dtype=float).filled(np.nan)
+ cell_map, hru_map = np.asarray(cell_map), np.asarray(hru_map)
+
+ if dem.shape != cell_map.shape or dem.shape != hru_map.shape:
+  raise ValueError("SW elevation: DEM, forcing map and HRU map shapes differ")
+
+ valid_dem = np.isfinite(dem) & (dem != -9999) & (dem != -999)
+ valid_cell = np.isfinite(cell_map) & (cell_map >= 0) & (cell_map == np.floor(cell_map))
+ valid = valid_dem & valid_cell
+
+ cell_means = {
+     cell: float(dem[valid & (cell_map == cell)].mean())
+     for cell in np.unique(cell_map[valid])
+ }
+
+ fine, reference = np.empty(nhru), np.empty(nhru)
+
+ for hru in range(nhru):
+  selected = hru_map == hru
+  if not selected.any() or not valid[selected].all():
+   raise ValueError(f"HRU {hru}: missing DEM or SW forcing-cell mapping")
+
+  cells, counts = np.unique(cell_map[selected], return_counts=True)
+  fine[hru] = dem[selected].mean()
+  reference[hru] = np.average(
+      [cell_means[cell] for cell in cells], weights=counts
+  )
+
+ return fine, reference
+
 def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydroblocks_info,covariates):
 
  #Define the mapping directory
@@ -1482,6 +1528,18 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
   nlat = mask_coarse.shape[0]
   nlon = mask_coarse.shape[1]
 
+  # Ben added for elevation correction - sw_elev_delta = HRU elevation − forcing-cell reference elevation
+  if var == 'swdown' and hydroblocks_info.get('shortwave_elevation_correction', False):
+   fine, reference = shortwave_elevation_reference(
+       covariates['dem'], mask_fine, OUTPUT['hru_map'], hydroblocks_info['nhru']
+   )
+   OUTPUT['parameters']['hru']['sw_elev_ref'] = reference
+   OUTPUT['parameters']['hru']['sw_elev_delta'] = fine - reference
+   print(
+      f"CID {hydroblocks_info['cid']}: SW elevation inputs created; "
+      f"delta range = {(fine-reference).min():.1f} to "
+      f"{(fine-reference).max():.1f} m", flush=True)
+  #Ben add ends here
 
   #Compute the mapping for each hru
   for hru in np.arange(hydroblocks_info['nhru']):
