@@ -318,7 +318,7 @@ class HydroBlocks:
           'lon','fveg','fvgmax','fpice','fcev','fgev','fctr','qsnbot',\
           'foln','smcmax','smcdry','smcref','errwat','zwt0','minzwt',\
           'mozb','fvb','mozv','fvv','zpd','zpdg','tauxb','tauyb','tauxv','tauyv','sfcheadrt',\
-          'snow','snowh','canwat','xlat','xlon','tsk','tmn','xice','sai','lai','grain','xsvf', 'xtvf', 'xslope', 'xaspect','xsdelev', \
+          'snow','snowh','canwat','xlat','xlon','tsk','tmn','xice','sai','lai','grain','xsvf', 'xtvf', 'xslope', 'xaspect','xsdelev', 'xsw_elev_delta', \
           'xhor_n', 'xhor_e', 'xhor_s', 'xhor_w', 'xhor_ne', 'xhor_se', 'xhor_sw', 'xhor_nw', \
           'gdd','chstar','area','msftx','msfty','qrfs','qsprings','qslat','fdepth',\
           'ht','riverbed','eqzwt','rivercond','pexp','rechclim',\
@@ -477,6 +477,14 @@ class HydroBlocks:
   self.noahmp.xslope[:] = self.input_fp.groups['parameters'].variables['slope'][:]
   self.noahmp.xaspect[:] = self.input_fp.groups['parameters'].variables['aspect'][:]
   self.noahmp.xsdelev[:] = self.input_fp.groups['parameters'].variables['sdelev'][:]
+
+  # SW elevation correction: HRU minus forcing-cell reference elevation [m]
+  self.noahmp.xsw_elev_delta[:] = 0.0
+  if self.metadata['noahmp_options'].get('iopt_swelev', 0) == 1:
+   self.noahmp.xsw_elev_delta[:] = self.input_fp.groups['parameters'].variables['sw_elev_delta'][:]
+  print('iopt_swelev:', self.metadata['noahmp_options'].get('iopt_swelev', 0),
+        'dz range [m]:', self.noahmp.xsw_elev_delta.min(), self.noahmp.xsw_elev_delta.max(), flush=True)
+
   self.noahmp.xhor_n[:] = self.input_fp.groups['parameters'].variables['hor_n'][:]
   self.noahmp.xhor_w[:] = self.input_fp.groups['parameters'].variables['hor_w'][:]
   self.noahmp.xhor_s[:] = self.input_fp.groups['parameters'].variables['hor_s'][:]
@@ -520,6 +528,7 @@ class HydroBlocks:
   self.noahmp.iopt_rad = self.metadata['noahmp_options']['iopt_rad'] # radiation transfer (1->gap=F(3D,cosz); 2->gap=0; 3->gap=1-Fveg)
   self.noahmp.iopt_3drad = self.metadata['noahmp_options']['iopt_3drad'] # 3D radiation transfer over mountains (1->plane parallel; 2->default 3D scheme; 3->new 3D scheme)
   self.noahmp.iopt_solar_midpoint = self.metadata['noahmp_options'].get('iopt_solar_midpoint', 0)
+  self.noahmp.iopt_swelev = int(self.metadata['noahmp_options'].get('iopt_swelev', 0)) # SW elevation correction (0->off; 1->Fiddes & Gruber 2014)
   self.noahmp.iopt_alb = self.metadata['noahmp_options']['iopt_alb'] # snow surface albedo (1->BATS; 2->CLASS)
   self.noahmp.iopt_snf = self.metadata['noahmp_options']['iopt_snf'] # rainfall & snowfall (1-Jordan91; 2->BATS; 3->Noah)]
   self.noahmp.iopt_tbot = self.metadata['noahmp_options']['iopt_tbot'] # lower boundary of soil temperature (1->zero-flux; 2->Noah) 
@@ -966,7 +975,7 @@ class HydroBlocks:
   # Update NOAH
   n = self.noahmp
   n.update(n.z_ml,n.dt,n.lwdn,n.swdn,n.u_ml,n.v_ml,n.q_ml,n.t_ml,n.prcp,n.psfc,\
-           n.nowdate,n.xlat,n.xlon,n.cosz,n.azimuth, n.xsvf, n.xtvf, n.xslope, n.xaspect, n.xsdelev, n.swdn_toa, \
+           n.nowdate,n.xlat,n.xlon,n.cosz,n.azimuth, n.xsvf, n.xtvf, n.xslope, n.xaspect, n.xsdelev, n.xsw_elev_delta, n.swdn_toa, \
            n.xhor_n, n.xhor_e, n.xhor_s, n.xhor_w, n.xhor_ne, n.xhor_se, n.xhor_sw, n.xhor_nw, \
            n.julian,\
            n.itime,n.year,\
@@ -975,7 +984,7 @@ class HydroBlocks:
            n.cropcat,\
            n.planting,n.harvest,n.season_gdd,\
            n.idveg,n.iopt_crs,n.iopt_btr,n.iopt_run,n.iopt_sfc,n.iopt_frz,\
-           n.iopt_inf,n.iopt_rad, n.iopt_3drad,n.iopt_solar_midpoint, n.iopt_alb,n.iopt_snf,n.iopt_tbot,n.iopt_stc,\
+           n.iopt_inf,n.iopt_rad, n.iopt_3drad,n.iopt_solar_midpoint, n.iopt_swelev, n.iopt_alb,n.iopt_snf,n.iopt_tbot,n.iopt_stc,\
            n.iopt_gla,n.iopt_rsf,n.iopt_crop,\
            n.iz0tlnd,n.sf_urban_physics,\
            n.tsk,n.hfx,n.qfx,n.lh,n.grdflx,n.smstav,\

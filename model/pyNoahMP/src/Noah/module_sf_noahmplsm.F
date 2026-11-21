@@ -138,6 +138,10 @@ MODULE MODULE_SF_NOAHMPLSM
                       ! **2 -> Default 3D radiation scheme
                       !   3 -> Tentative new 3D radiation scheme
 
+  INTEGER :: OPT_SWELEV ! options for elevation correction of direct shortwave
+                      !   0 -> off
+                      !   1 -> Fiddes & Gruber (2014), Eqs. 4-6
+
   INTEGER :: OPT_ALB  ! options for ground snow surface albedo
                       !   1 -> BATS
 		      ! **2 -> CLASS
@@ -389,7 +393,7 @@ contains
 !== begin noahmp_sflx ==============================================================================
 
   SUBROUTINE NOAHMP_SFLX (parameters, &
-                   ILOC    , JLOC    , LAT     , YEARLEN , JULIAN  , COSZ, AZIM, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA     , & ! IN : Time/Space-related
+                   ILOC    , JLOC    , LAT     , YEARLEN , JULIAN  , COSZ, AZIM, SVF, TVF, SLOPE, ASPECT, SDELEV, SW_ELEV_DELTA, SWDN_TOA     , & ! IN : Time/Space-related
                    hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw, & ! IN: horizon angles
                    DT      , DX      , DZ8W    , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
                    SHDFAC  , SHDMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
@@ -461,6 +465,7 @@ contains
   REAL                          , INTENT(IN)     :: SLOPE ! topo slope [-]
   REAL                          , INTENT(IN)     :: ASPECT ! topo aspect [-]
   REAL                          , INTENT(IN)     :: SDELEV ! elevation standard deviation [m]
+  REAL                          , INTENT(IN)     :: SW_ELEV_DELTA ! HRU minus SW forcing-reference elevation [m]
   REAL                          , INTENT(IN)     :: hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw  ! IN: horizon angles
   REAL                          , INTENT(IN)     :: SWDN_TOA ! downward shortwave radiation at the top of atmosphere [W/m2]
   REAL                           , INTENT(IN)    :: TBOT   !bottom condition for soil temp. [K]
@@ -710,7 +715,7 @@ contains
 
    CALL ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                            &
              PRCPCONV, PRCPNONC,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL, &
-             SOLDN   ,LWDN, COSZ     ,   AZIM,   ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA, SWDN_3D, LWDN_3D, &
+             SOLDN   ,LWDN, COSZ     ,   AZIM,   ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SW_ELEV_DELTA, SWDN_TOA, SWDN_3D, LWDN_3D, &
              hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw, & ! IN: horizon angles
               THAIR   ,QAIR    ,                   & 
              EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   ,SOLAI   , &
@@ -901,7 +906,7 @@ contains
 
   SUBROUTINE ATM (parameters,SFCPRS  ,SFCTMP   ,Q2      ,                             &
                   PRCPCONV,PRCPNONC ,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL , &
-                  SOLDN   ,LWDN, COSZ, AZIM, ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA     ,SWDN_3D, LWDN_3D, &
+                  SOLDN   ,LWDN, COSZ, AZIM, ALBOLD, SVF, TVF, SLOPE, ASPECT, SDELEV, SW_ELEV_DELTA, SWDN_TOA, SWDN_3D, LWDN_3D, &
                   hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw, & ! IN: horizon angles
                   THAIR   ,QAIR    ,                    & 
                   EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   , SOLAI   , &
@@ -933,6 +938,7 @@ contains
   REAL                          , INTENT(IN)  :: SLOPE ! topo slope [-]
   REAL                          , INTENT(IN)  :: ASPECT ! topo aspect [-]
   REAL                          , INTENT(IN)  :: SDELEV ! elevation standard deviation [m]
+  REAL                          , INTENT(IN)  :: SW_ELEV_DELTA ! HRU minus SW forcing-reference elevation [m]
   REAL                          , INTENT(IN)  :: hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw  ! horizon angles
   REAL                          , INTENT(IN)  :: SWDN_TOA ! downward shortwave radiation at the top of atmosphere [W/m2]
 
@@ -969,6 +975,8 @@ contains
   REAL                                        :: COS_INC ! cosine of solar incidence angle over tilted surface [-]
   REAL                                        :: COS_INC_OVER_COSZ ! 
   REAL                                        :: SLOPE_RAD ! local slope angle in radians [-]
+  REAL                                        :: COS_SLOPE ! cos(slope): 3D terms per horizontal area, =====Ben aded area correction
+  REAL, PARAMETER                             :: AREA_CORR = 1.0 ! 1 = per horizontal area, 0 = per slope area (old)   =====Ben aded area correction
   REAL                                        :: SINZ ! sine of solar zenith angle [-]
   REAL                                        :: COSZ_TMP ! sine of solar zenith angle [-]
   LOGICAL                                     :: ISSHADE ! true if point is shaded, else false
@@ -1052,9 +1060,38 @@ contains
        SOLAD(2) = SWDOWN*(1.0-DIFFUSE_FRAC)*(1.-VIS_FRACTION)    ! direct  nir
        SOLAI(1) = SWDOWN*DIFFUSE_FRAC*VIS_FRACTION              ! diffuse vis
        SOLAI(2) = SWDOWN*DIFFUSE_FRAC*(1.0-VIS_FRACTION)         ! diffuse nir
+       
+       IF (OPT_SWELEV == 1) THEN   ! elevation correction of direct beam (Fiddes & Gruber 2014)
+       ! Adjust direct visible and near-infrared radiation for HRU elevation.
+       ! SW_ELEV_DELTA is supplied in metres; normalize only here.
+       DELTA_ELEV = SW_ELEV_DELTA / 1000    ! HRU minus forcing-reference elevation, normalized by 1 km
+       ! Keep the original KT_PARTITION threshold. Skip very low sun and
+       ! cases where the interval-mean forcing exceeds instantaneous TOA.
+       IF (KT_PARTITION > 0.65 .AND. DELTA_ELEV /= 0.0 .AND. &
+           COSZ > 0.001 .AND. COSZ <= 1.0 .AND. &
+           SWDN_TOA > 1.0 .AND. SWDOWN <= SWDN_TOA) THEN
 
+          ! Calculate KAPPA from both original bands before changing either.
+          IF ((SOLAD(1)+SOLAD(2)) > 0.0 .AND. &
+              (SOLAD(1)+SOLAD(2)) < SWDN_TOA) THEN
 
-      ! CORRECT SW DIRECT BASED ON ELEVATION (RUIZ ET AL 2010; FIDDLES ANF GRUBER; 2021)
+             KAPPA = -COSZ * LOG((SOLAD(1)+SOLAD(2))/SWDN_TOA)
+
+             DELTA_SOLAD = SOLAD(1)*(1.0 - EXP(-KAPPA*DELTA_ELEV*COSZ))
+             SOLAD(1) = SOLAD(1) + DELTA_SOLAD
+
+             DELTA_SOLAD = SOLAD(2)*(1.0 - EXP(-KAPPA*DELTA_ELEV*COSZ))
+             SOLAD(2) = SOLAD(2) + DELTA_SOLAD
+
+             ! keep direct horizontal beam between zero and TOA
+             SOLAD(1:2) = MAX(SOLAD(1:2), 0.0)
+             IF ((SOLAD(1)+SOLAD(2)) > SWDN_TOA) SOLAD(1:2) = SOLAD(1:2) * SWDN_TOA / (SOLAD(1)+SOLAD(2))
+
+          END IF
+       END IF
+       END IF   ! OPT_SWELEV == 1
+
+      ! CORRECT SW DIRECT BASED ON ELEVATION (RUIZ ET AL 2010; FIDDLES ANF GRUBER; 2014)
       ! IF (KT_PARTITION > 0.65) THEN
       ! DELTA_ELEV = 0.0 ! difference in elevation between this lcoation and mean cell -> read from data.
       ! KAPPA = - COSZ * LOG( (SOLAD(1)+SOLAD(2))/SWDN_TOA)
@@ -1081,17 +1118,46 @@ contains
       
        COS_AZIM_ASPECT = COS(3.14159265-ASPECT)*COS(AZIM) + SIN(3.14159265-ASPECT)*SIN(AZIM)
 
-
-
        
        SLOPE_RAD = max(0.0, ATAN(SLOPE)) ! slope input from geospatialtools is tangent = dz / dL
+       
+       ! surface-area correction (Hao et al. 2025, see also Manners et al. 2012) ==== Ben added area correction
+       ! AREA_CORR = 1: fluxes per horizontal (grid) area; 0: per tilted-surface area (original scheme)
+       COS_SLOPE = 1.0 - AREA_CORR * (1.0 - MAX(COS(SLOPE_RAD), 0.1))
+
        SINZ = SQRT(1.0 - COSZ*COSZ)
        COS_INC = COSZ * COS(SLOPE_RAD) + SINZ * SIN(SLOPE_RAD)*COS_AZIM_ASPECT
        COS_INC = min(max(COS_INC, -1.0), 1.0)
-       COS_INC_OVER_COSZ = COS_INC/COSZ
-       ! COS_INC_OVER_COSZ = min(10.0, COS_INC/COSZ)
+       ! COS_INC_OVER_COSZ = COS_INC/COSZ   !Ben commented due to crash and replaced with the bounded below
+       ! Diagnostic test: limit low-sun 3D radiation amplification
+       !IF (IOPT_SOLAR_MIDPOINT == 0) THEN
+           ! Original solar timing: no upper cap
+           !COS_INC_OVER_COSZ = COS_INC/COSZ
+       !ELSE
+           !IF (COSZ > 0.001) THEN
+              ! Other solar timing options: cap at 2
+              !COS_INC_OVER_COSZ = MIN(2.0, MAX(0.0, COS_INC/COSZ))
+          !ELSE
+           !COS_INC_OVER_COSZ = 0.0
+           !ENDIF
+
+           ! Test: fineTOP-inspired 5-degree solar elevation threshold
+
+           IF (COSZ > 0.0872) THEN
+               ! Solar elevation above approximately 5 degrees
+               COS_INC_OVER_COSZ = MIN(7.0, MAX(0.0, COS_INC/COSZ))
+               
+           ELSE IF (COSZ > 0.001) THEN
+               ! Solar elevation below approximately 5 degrees
+                COS_INC_OVER_COSZ = MIN(2.0, MAX(0.0, COS_INC/COSZ))
+           ELSE
+               ! Sun at or below the numerical cutoff
+                COS_INC_OVER_COSZ = 1.0
+           ENDIF
+       !ENDIF
+       ! COS_INC_OVER_COSZ = COS_INC/COSZ
        ! COSZ_TMP = min(max(COSZ, 0.001), 1.0)
-       
+
        ISSHADE = .false. ! for starters, let there be light
 
        LWDN_3D = LWDN ! TODO: do it in Energy, needs to solve TRAD iteratively or at least a guess
@@ -1108,14 +1174,14 @@ contains
        IF (COS_INC < 0.0) THEN
         ISSHADE = .true. ! SLOPE SELF SHADE.
        ENDIF
-      SW_REFL_DIF = ALBOLD * SOLAI * TVF ! TODO: do it by band in ENERGY, use [current] albedo by band
-      SW_REFL_DIR = ALBOLD * SOLAD * TVF
+      SW_REFL_DIF = ALBOLD * SOLAI * TVF / COS_SLOPE ! TODO: do it by band in ENERGY, use [current] albedo by band    !Ben added / COS_SLOPE for areas correction
+      SW_REFL_DIR = ALBOLD * SOLAD * TVF / COS_SLOPE        !Ben added / COS_SLOPE for areas correction  
       IF (ISSHADE) THEN ! cast shade
         SOLAD = SW_REFL_DIR
       ELSE ! no shade
-        SOLAD = SOLAD * COS_INC_OVER_COSZ  + SW_REFL_DIR
+        SOLAD = SOLAD * COS_INC_OVER_COSZ / COS_SLOPE  + SW_REFL_DIR  !Ben added / COS_SLOPE for area correction
       ENDIF
-        SOLAI = SOLAI * SVF + SW_REFL_DIF
+        SOLAI = SOLAI * SVF / COS_SLOPE + SW_REFL_DIF     !Ben added / COS_SLOPE for area correction
  
 
 
@@ -1127,19 +1193,39 @@ contains
        ! IF (COS_INC < 0.0) THEN
        !  ISSHADE = .true. ! SLOPE SELF SHADE.
        ! ENDIF
-      SW_REFL_DIF = ALBOLD * SOLAI * TVF ! TODO: do it by band in ENERGY, use [current] albedo by band
-      SW_REFL_DIR = ALBOLD * SOLAD * TVF
+      SW_REFL_DIF = ALBOLD * SOLAI * TVF / COS_SLOPE !!Ben added / COS_SLOPE for area correction  ! TODO: do it by band in ENERGY, use [current] albedo by band
+      SW_REFL_DIR = ALBOLD * SOLAD * TVF / COS_SLOPE  !Ben added / COS_SLOPE for areas correction 
       IF (ISSHADE) THEN ! cast shade
         SOLAD = SW_REFL_DIR
       ELSE ! no shade
-        SOLAD = SOLAD * COS_INC_OVER_COSZ  + SW_REFL_DIR
+        SOLAD = SOLAD * COS_INC_OVER_COSZ / COS_SLOPE + SW_REFL_DIR   !Ben added / COS_SLOPE for area correction
       ENDIF
-        SOLAI = SOLAI * SVF + SW_REFL_DIF
+        SOLAI = SOLAI * SVF / COS_SLOPE + SW_REFL_DIF   !Ben added / COS_SLOPE for area correction
 
      ENDIF
 
      ! update total downward radiation
      SWDN_3D = SOLAD(1)+SOLAD(2)+SOLAI(1)+SOLAI(2)
+
+     !Ben added print statements so to debug crash after midpoint cosz
+     IF (OPT_3DRAD == 2 .AND. COSZ > 0.001) THEN
+       IF (SWDN_3D > 1361.0/COS_SLOPE) THEN
+
+          WRITE(6,*) 'DEBUG_3DRAD:', &
+            ' COSZ=', COSZ, &
+            ' COS_INC=', COS_INC, &
+            ' RATIO=', COS_INC_OVER_COSZ, &
+            ' SWDN=', SOLDN, &
+            ' SWDN_3D=', SWDN_3D, &
+            ' SWDN_TOA=', SWDN_TOA, &
+            ' SLOPE=', SLOPE, &
+            ' ISSHADE=', ISSHADE
+
+          FLUSH(6)
+       END IF
+      END IF
+
+
      !SWDOWN = SWDN_3D
      ! update total longwave down
      
@@ -2289,6 +2375,22 @@ ENDIF   ! CROPTYPE == 0
     END IF
 
     FIRE = LWDN + FIRA
+
+    IF (FIRE <= 0.0 .OR. TGV > 330.0) THEN
+      WRITE(6,*) 'DEBUG_RADIATION:', &
+        ' ILOC=', ILOC, ' JLOC=', JLOC, &
+        ' JULIAN=', JULIAN, &
+        ' TGV=', TGV, ' TGB=', TGB, &
+        ' TV=', TV, ' TG=', TG, &
+        ' ALBEDO=', ALBOLD, &
+        ' SWDOWN=', SWDOWN, &
+        ' SAV=', SAV, ' SAG=', SAG, &
+        ' LWDN=', LWDN, &
+        ' IRG=', IRG, ' IRC=', IRC, &
+        ' IRB=', IRB, ' FIRA=', FIRA, &
+        ' FIRE=', FIRE, ' FVEG=', FVEG
+      FLUSH(6)
+    END IF
 
     IF(FIRE <=0.) THEN
        WRITE(6,*) 'emitted longwave <0; skin T may be wrong due to inconsistent'
@@ -4042,6 +4144,20 @@ ENDIF   ! CROPTYPE == 0
 
      END DO loop1 ! end stability iteration
 
+     ! Diagnose strongly negative canopy LW before AIR/CIR are overwritten.
+     IF (IRC < -LWDN) THEN
+        WRITE(6,*) 'CANOPY LW DEBUG: ILOC,JLOC=',ILOC,JLOC
+        WRITE(6,*) 'CANOPY STATE: TV=',TV,' TG=',TG, &
+                   ' FVEG=',FVEG,' LWDN=',LWDN
+        WRITE(6,*) 'CANOPY COEFF: AIR=',AIR,' CIR=',CIR
+        WRITE(6,*) 'CANOPY STEP: DTV=',DTV,' A=',A,' B=',B
+        WRITE(6,*) 'CANOPY FLUX: IRC=',IRC, &
+                   ' EXACT_AT_TV=',FVEG*(AIR+CIR*TV**4)
+        WRITE(6,*) 'CANOPY ENERGY: SAV=',SAV,' SHC=',SHC, &
+                   ' EVC=',EVC,' TR=',TR,' PAHV=',PAHV
+        FLUSH(6)
+     END IF
+
 ! under-canopy fluxes and tg
 
         AIR = - EMG*(1.-EMV)*LWDN - EMG*EMV*SB*TV**4
@@ -4070,6 +4186,20 @@ ENDIF   ! CROPTYPE == 0
         B = SAG-IRG-SHG-EVG-GH+PAHG
         A = 4.*CIR*TG**3+CSH+CEV*DESTG+CGH
         DTG = B/A
+
+        !Ben added print statement to debug midpoit crash
+        IF (ITER == NITERG .AND. (TG > 330.0 .OR. ABS(DTG) > 3.0)) THEN
+        !IF (TG > 320.0 .OR. ABS(DTG) > 10.0) THEN
+          WRITE(6,*) 'DEBUG_GROUND:', &
+            ' ILOC=', ILOC, ' JLOC=', JLOC, &
+            ' JULIAN=', JULIAN, ' ITER=', ITER, &
+            ' TG=', TG, ' DTG=', DTG, &
+            ' SAG=', SAG, ' SAV=', SAV, &
+            ' IRG=', IRG, ' SHG=', SHG, &
+            ' EVG=', EVG, ' GH=', GH, &
+            ' A=', A, ' B=', B
+          FLUSH(6)
+        END IF
 
         IRG = IRG + 4.*CIR*TG**3*DTG
         SHG = SHG + CSH*DTG
@@ -9328,7 +9458,7 @@ END SUBROUTINE EMERG
 !== begin noahmp_options ===========================================================================
 
   subroutine noahmp_options(idveg     ,iopt_crs  ,iopt_btr  ,iopt_run  ,iopt_sfc  ,iopt_frz , & 
-                             iopt_inf  ,iopt_rad  ,iopt_3drad, iopt_alb  ,iopt_snf  ,iopt_tbot, iopt_stc, &
+                             iopt_inf  ,iopt_rad  ,iopt_3drad, iopt_swelev, iopt_alb  ,iopt_snf  ,iopt_tbot, iopt_stc, &
 			     iopt_rsf , iopt_soil, iopt_pedo, iopt_crop )
 
   implicit none
@@ -9342,6 +9472,7 @@ END SUBROUTINE EMERG
   INTEGER,  INTENT(IN) :: iopt_inf  !frozen soil permeability (1-> NY06; 2->Koren99)
   INTEGER,  INTENT(IN) :: iopt_rad  !radiation transfer (1->gap=F(3D,cosz); 2->gap=0; 3->gap=1-Fveg)
   INTEGER,  INTENT(IN) :: iopt_3drad  ! 3D radiation transfer over mountains (1->plane parallel; 2->3D rad default scheme; 3->other option TBD)
+  INTEGER,  INTENT(IN) :: iopt_swelev ! SW elevation correction (0->off; 1->Fiddes & Gruber 2014)
   INTEGER,  INTENT(IN) :: iopt_alb  !snow surface albedo (1->BATS; 2->CLASS)
   INTEGER,  INTENT(IN) :: iopt_snf  !rainfall & snowfall (1-Jordan91; 2->BATS; 3->Noah)
   INTEGER,  INTENT(IN) :: iopt_tbot !lower boundary of soil temperature (1->zero-flux; 2->Noah)
@@ -9364,7 +9495,8 @@ END SUBROUTINE EMERG
   opt_frz  = iopt_frz  
   opt_inf  = iopt_inf  
   opt_rad  = iopt_rad
-  opt_3drad  = iopt_3drad  
+  opt_3drad  = iopt_3drad
+  opt_swelev = iopt_swelev  
   opt_alb  = iopt_alb  
   opt_snf  = iopt_snf  
   opt_tbot = iopt_tbot 

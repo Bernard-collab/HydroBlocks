@@ -9,7 +9,7 @@ MODULE module_sf_noahmpdrv
 !
 CONTAINS
 !
-  SUBROUTINE noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH, XSVF, XTVF, XSLOPE, XASPECT, XSDELEV, XSWDN_TOA, &
+  SUBROUTINE noahmplsm(ITIMESTEP,        YR,   JULIAN,   COSZIN,AZIMUTH, XSVF, XTVF, XSLOPE, XASPECT, XSDELEV, XSW_ELEV_DELTA, XSWDN_TOA, &
     xhor_n, xhor_e, xhor_s, xhor_w, xhor_ne, xhor_se, xhor_sw, xhor_nw, &
     XLAT,XLONG, & ! IN : Time/Space-related
                   DZ8W,       DT,       DZS,    NSOIL,       DX,            & ! IN : Model configuration 
@@ -17,7 +17,7 @@ CONTAINS
 		 XLAND,     XICE,XICE_THRES,  CROPCAT,                      & ! IN : Vegetation/Soil characteristics
 	       PLANTING,  HARVEST,SEASON_GDD,                               &
                  IDVEG, IOPT_CRS,  IOPT_BTR, IOPT_RUN, IOPT_SFC, IOPT_FRZ,  & ! IN : User options
-              IOPT_INF, IOPT_RAD, IOPT_3DRAD, IOPT_ALB, IOPT_SNF,IOPT_TBOT, IOPT_STC,  & ! IN : User options
+              IOPT_INF, IOPT_RAD, IOPT_3DRAD, IOPT_SWELEV, IOPT_ALB, IOPT_SNF,IOPT_TBOT, IOPT_STC,  & ! IN : User options
               IOPT_GLA, IOPT_RSF, IOPT_SOIL,IOPT_PEDO,IOPT_CROP,            & ! IN : User options
               IZ0TLND, SF_URBAN_PHYSICS,                                    & ! IN : User options
 	      SOILCOMP,  SOILCL1,  SOILCL2,   SOILCL3,  SOILCL4,            & ! IN : User options
@@ -81,6 +81,7 @@ CONTAINS
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XSLOPE ! topo slope [-]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XASPECT ! topo aspect [-]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XSDELEV ! elevation standard deviation [m]
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XSW_ELEV_DELTA ! HRU minus SW reference elevation [m]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  xhor_n, xhor_e, xhor_s, xhor_w, xhor_ne, xhor_se, xhor_sw, xhor_nw ! horizons
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XLAT      ! latitude [rad]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN   ) ::  XLONG     ! latitude [rad]
@@ -106,6 +107,7 @@ CONTAINS
     INTEGER,                                         INTENT(IN   ) ::  IOPT_INF  ! frozen soil permeability (1-> NY06; 2->Koren99)
     INTEGER,                                         INTENT(IN   ) ::  IOPT_RAD  ! radiation transfer (1->gap=F(3D,cosz); 2->gap=0; 3->gap=1-Fveg)
     INTEGER,                                         INTENT(IN   ) ::  IOPT_3DRAD  ! 3D radiation transfer (1->plane parallel; 2-> default 3D scheme; 3-> New 3D scheme)
+    INTEGER,                                         INTENT(IN   ) ::  IOPT_SWELEV ! SW elevation correction (0->off; 1->Fiddes & Gruber 2014)
     INTEGER,                                         INTENT(IN   ) ::  IOPT_ALB  ! snow surface albedo (1->BATS; 2->CLASS)
     INTEGER,                                         INTENT(IN   ) ::  IOPT_SNF  ! rainfall & snowfall (1-Jordan91; 2->BATS; 3->Noah)
     INTEGER,                                         INTENT(IN   ) ::  IOPT_TBOT ! lower boundary of soil temperature (1->zero-flux; 2->Noah)
@@ -300,6 +302,7 @@ CONTAINS
     REAL                                :: SLOPE        ! 
     REAL                                :: ASPECT       ! 
     REAL                                :: SDELEV       ! 
+    REAL                                :: SW_ELEV_DELTA ! HRU minus SW reference elevation [m]
     REAL                                :: hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw       ! horizons
     REAL                                :: Z_ML         ! model height [m]
     INTEGER                             :: VEGTYP       ! vegetation type
@@ -505,7 +508,7 @@ CONTAINS
 ! ----------------------------------------------------------------------
 
     CALL NOAHMP_OPTIONS(IDVEG  ,IOPT_CRS  ,IOPT_BTR  ,IOPT_RUN  ,IOPT_SFC  ,IOPT_FRZ , &
-                     IOPT_INF  ,IOPT_RAD  ,IOPT_3DRAD, IOPT_ALB  ,IOPT_SNF  ,IOPT_TBOT, IOPT_STC , &
+                     IOPT_INF  ,IOPT_RAD  ,IOPT_3DRAD, IOPT_SWELEV, IOPT_ALB  ,IOPT_SNF  ,IOPT_TBOT, IOPT_STC , &
 		     IOPT_RSF  ,IOPT_SOIL ,IOPT_PEDO ,IOPT_CROP )
 
     IPRINT    =  .false.                     ! debug printout
@@ -579,6 +582,7 @@ CONTAINS
        SLOPE    = XSLOPE (I,J)                        ! terrain slope []
        ASPECT    = XASPECT  (I,J)                     ! terrain aspect []
        SDELEV    = XSDELEV  (I,J)                     ! standard deviation of elevation [m]
+       SW_ELEV_DELTA = XSW_ELEV_DELTA(I,J)            ! HRU minus SW reference elevation [m]
        HOR_N    = XHOR_N  (I,J)                     ! horizon angles for 8 compass directions []
        HOR_E    = XHOR_E  (I,J)                     ! horizon angles for 8 compass directions []
        HOR_S    = XHOR_S  (I,J)                     ! horizon angles for 8 compass directions []
@@ -910,7 +914,7 @@ CONTAINS
     ELSE
          ICE=0                              ! Neither sea ice or land ice.
          CALL NOAHMP_SFLX (parameters, &
-            I       , J       , LAT     , YEARLEN , JULIAN  , COSZ,   AZIM , SVF, TVF, SLOPE, ASPECT, SDELEV, SWDN_TOA, & ! IN : Time/Space-related
+            I       , J       , LAT     , YEARLEN , JULIAN  , COSZ,   AZIM , SVF, TVF, SLOPE, ASPECT, SDELEV, SW_ELEV_DELTA, SWDN_TOA, & ! IN : Time/Space-related
             hor_n, hor_e, hor_s, hor_w, hor_ne, hor_se, hor_sw, hor_nw, & ! IN: horizon angles
             DT      , DX      , DZ8W1D  , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
             FVEG    , FVGMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics

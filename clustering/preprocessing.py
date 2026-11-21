@@ -1529,17 +1529,17 @@ def Prepare_Meteorology_Semidistributed(workspace,wbd,OUTPUT,input_dir,info,hydr
   nlon = mask_coarse.shape[1]
 
   # Ben added for elevation correction - sw_elev_delta = HRU elevation − forcing-cell reference elevation
-  if var == 'swdown' and hydroblocks_info.get('shortwave_elevation_correction', False):
-   fine, reference = shortwave_elevation_reference(
-       covariates['dem'], mask_fine, OUTPUT['hru_map'], hydroblocks_info['nhru']
-   )
-   OUTPUT['parameters']['hru']['sw_elev_ref'] = reference
-   OUTPUT['parameters']['hru']['sw_elev_delta'] = fine - reference
-   print(
-      f"CID {hydroblocks_info['cid']}: SW elevation inputs created; "
-      f"delta range = {(fine-reference).min():.1f} to "
-      f"{(fine-reference).max():.1f} m", flush=True)
-  #Ben add ends here
+  if var == 'swdown' and hydroblocks_info.get('noahmp_options', {}).get('iopt_swelev', 0) == 1:   
+    fine, reference = shortwave_elevation_reference(
+        covariates['dem'], mask_fine, OUTPUT['hru_map'], hydroblocks_info['nhru']
+    )
+    OUTPUT['parameters']['hru']['sw_elev_ref'] = reference
+    OUTPUT['parameters']['hru']['sw_elev_delta'] = fine - reference
+    print(
+         f"CID {hydroblocks_info['cid']}: SW elevation inputs created; "
+         f"delta range = {(fine-reference).min():.1f} to "
+         f"{(fine-reference).max():.1f} m", flush=True)
+    #Ben add ends here
 
   #Compute the mapping for each hru
   for hru in np.arange(hydroblocks_info['nhru']):
