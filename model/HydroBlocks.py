@@ -313,7 +313,7 @@ class HydroBlocks:
           'fwet','sneqvo','albold','qsnow','wslake','zwt','dzwt','wa','wt','smcwtd','deeprech','rech',\
           'lfmass','rtmass','stmass','wood','stblcp','fastcp','tauss','t2mv','t2mb','q2mv',\
           'q2mb','trad','nee','gpp','npp','fvegmp','runsf','runsb','ecan','etran','esoil','fsa','fira',\
-          'apar','psn','sav','sag','rssun','rssha','swdn_3d','lwdn_3d','bgap','wgap','tgv','tgb','chv','chb','irc','irg','shc',\
+          'apar','psn','sav','sag','rssun','rssha','swdn_3d','lwdn_3d','swdn_3d_dir','swdn_3d_dif','swdn_3d_refl','bgap','wgap','tgv','tgb','chv','chb','irc','irg','shc',\
           'shg','evg','ghv','irb','shb','evb','ghb','tr','evc','chleaf','chuc','chv2','chb2','cosz','azimuth','swdn_toa','lat',\
           'lon','fveg','fvgmax','fpice','fcev','fgev','fctr','qsnbot',\
           'foln','smcmax','smcdry','smcref','errwat','zwt0','minzwt',\
@@ -1003,6 +1003,7 @@ class HydroBlocks:
            n.trad,n.nee,n.gpp,n.npp,n.fvegmp,n.runsf,\
            n.runsb,n.ecan,n.edir,n.etran,n.fsa,n.fira,\
            n.apar,n.psn,n.sav,n.sag,n.rssun,n.rssha,n.swdn_3d,n.lwdn_3d,\
+           n.swdn_3d_dir,n.swdn_3d_dif,n.swdn_3d_refl,\
            n.bgap,n.wgap,n.tgv,n.tgb,n.chv,n.chb,\
            n.shg,n.shc,n.shb,n.evg,n.evb,n.ghv,\
            n.ghb,n.irg,n.irc,n.irb,n.tr,n.evc,\
@@ -1231,6 +1232,9 @@ class HydroBlocks:
   tmp['runoff'] = NOAH.dt*(np.copy(NOAH.runsf)+np.copy(NOAH.runsb)) #mm 
   tmp['prcp'] = NOAH.dt*np.copy(NOAH.prcp) #W/m2
   tmp['swdn_3d'] = np.copy(NOAH.swdn_3d) #W/m2
+  tmp['swdn_3d_dir'] = np.copy(NOAH.swdn_3d_dir) #W/m2
+  tmp['swdn_3d_dif'] = np.copy(NOAH.swdn_3d_dif) #W/m2
+  tmp['swdn_3d_refl'] = np.copy(NOAH.swdn_3d_refl) #W/m2
   tmp['lwdn_3d'] = np.copy(NOAH.lwdn_3d) #W/m2
   tmp['psfc'] = np.copy(NOAH.psfc) #Pa
   tmp['u_ml'] = np.copy(NOAH.u_ml) #m/s
@@ -1454,6 +1458,9 @@ class HydroBlocks:
              "swdn":{'description':'Shortwave down','units':'W/m2','dims':('time','hru',),'precision':4},
              "lwdn":{'description':'Longwave down','units':'W/m2','dims':('time','hru',),'precision':4},
              "swdn_3d":{'description':'Shortwave radiation down with 3D topography correction', 'units':'W/m2', 'dims':('time','hru'), 'precision':4},
+             "swdn_3d_dir":{'description':'Terrain-corrected direct shortwave radiation', 'units':'W/m2', 'dims':('time','hru'), 'precision':4},
+             "swdn_3d_dif":{'description':'Diffuse shortwave radiation from visible sky', 'units':'W/m2', 'dims':('time','hru'), 'precision':4},
+             "swdn_3d_refl":{'description':'Terrain-reflected shortwave radiation', 'units':'W/m2', 'dims':('time','hru'), 'precision':4},
              "lwdn_3d":{'description':'Longwave radiation down with 3D topography correction', 'units':'W/m2', 'dims':('time','hru'), 'precision':4},
              'trad':{'description':'Land surface skin temperature','units':'K','dims':('time','hru',),'precision':2},
              'stc':{'description': 'Snow/soil temperature','units':'K','dims':('time','hru',),'precision':2},

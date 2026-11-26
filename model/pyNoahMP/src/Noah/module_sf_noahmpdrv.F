@@ -39,6 +39,7 @@ CONTAINS
 	        TRADXY,    NEEXY,    GPPXY,     NPPXY,   FVEGXY,   RUNSFXY, & ! OUT Noah MP only
 	       RUNSBXY,   ECANXY,   EDIRXY,   ETRANXY,    FSAXY,    FIRAXY, & ! OUT Noah MP only
 	        APARXY,    PSNXY,    SAVXY,     SAGXY,  RSSUNXY,   RSSHAXY, SWDN_3DXY, LWDN_3DXY, & ! OUT Noah MP only
+          SWDN_3D_DIRXY, SWDN_3D_DIFXY, SWDN_3D_REFLXY, & ! Ben added 3d components print
 		BGAPXY,   WGAPXY,    TGVXY,     TGBXY,    CHVXY,     CHBXY, & ! OUT Noah MP only
 		 SHGXY,    SHCXY,    SHBXY,     EVGXY,    EVBXY,     GHVXY, & ! OUT Noah MP only
 		 GHBXY,    IRGXY,    IRCXY,     IRBXY,     TRXY,     EVCXY, & ! OUT Noah MP only
@@ -260,6 +261,9 @@ CONTAINS
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  RSSUNXY   ! sunlit leaf stomatal resistance (s/m)
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  RSSHAXY   ! shaded leaf stomatal resistance (s/m)
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  SWDN_3DXY ! down shortwave radiation corrected for 3d topographic effects (w/m2)
+    REAL,    DIMENSION(ims:ime,           jms:jme), INTENT(OUT   ) ::  SWDN_3D_DIRXY ! sw 3d dir component
+    REAL,    DIMENSION(ims:ime,           jms:jme), INTENT(OUT   ) ::  SWDN_3D_DIFXY ! sw 3d diff component
+    REAL,    DIMENSION(ims:ime,           jms:jme), INTENT(OUT   ) ::  SWDN_3D_REFLXY ! sw 3d ref component
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  LWDN_3DXY ! down longwave radiation corrected for 3d topographic effects (w/m2)
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  BGAPXY    ! between gap fraction
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(OUT  ) ::  WGAPXY    ! within gap fraction
@@ -411,6 +415,9 @@ CONTAINS
     REAL, DIMENSION(1:2)                :: ALBSND       ! snow albedo (direct)
     REAL, DIMENSION(1:2)                :: ALBSNI       ! snow albedo (diffuse)
     REAL                                :: SWDN_3D      ! down shortwave radiation corrected for 3D effects (w/m2)
+    REAL                                :: SWDN_3D_DIR  ! down shortwave radiation direct component
+    REAL                                :: SWDN_3D_DIF  ! down shortwave radiation diffused component
+    REAL                                :: SWDN_3D_REFL ! down shortwave radiation reflected component
     REAL                                :: LWDN_3D      ! down longwave radiation corrected for 3D effects (w/m2)
     REAL                                :: RB           ! leaf boundary layer resistance (s/m)
     REAL                                :: LAISUN       ! sunlit leaf area index (m2/m2)
@@ -879,6 +886,9 @@ CONTAINS
          RSSUN  = undefined_value 
          RSSHA  = undefined_value
          SWDN_3D= undefined_value 
+         SWDN_3D_DIR  = undefined_value
+         SWDN_3D_DIF  = undefined_value
+         SWDN_3D_REFL = undefined_value
          LWDN_3D= undefined_value
          RB     = undefined_value
          LAISUN = undefined_value
@@ -941,6 +951,7 @@ CONTAINS
             FSNO    , NEE     , GPP     , NPP     , FVEGMP  , SALB    , & ! OUT : 
             QSNBOT  , PONDING , PONDING1, PONDING2, RSSUN   , RSSHA   , & ! OUT : 
             ALBSND  , ALBSNI  , SWDN_3D, LWDN_3D,                       & ! OUT :
+            SWDN_3D_DIR, SWDN_3D_DIF, SWDN_3D_REFL,                     & ! OUT
             BGAP    , WGAP    , CHV     , CHB     , EMISSI  ,           & ! OUT : 
             SHG     , SHC     , SHB     , EVG     , EVB     , GHV     , & ! OUT :
 	    GHB     , IRG     , IRC     , IRB     , TR      , EVC     , & ! OUT :
@@ -1047,10 +1058,14 @@ CONTAINS
              RSSUNXY  (I,J)                = RSSUN
              RSSHAXY  (I,J)                = RSSHA
              SWDN_3DXY(I,J)                = SWDN_3D
+             SWDN_3DXY(I,J)                = SWDN_3D
+             SWDN_3D_DIRXY(I,J)            = SWDN_3D_DIR
+             SWDN_3D_DIFXY(I,J)            = SWDN_3D_DIF
+             SWDN_3D_REFLXY(I,J)           = SWDN_3D_REFL
              LWDN_3DXY(I,J)                = LWDN_3D
-             !LAISUN                        = MAX(LAISUN, 0.0)
-             !LAISHA                        = MAX(LAISHA, 0.0)
-             !RB                            = MAX(RB, 0.0)
+             !LAISUN                       = MAX(LAISUN, 0.0)
+             !LAISHA                       = MAX(LAISHA, 0.0)
+             !RB                           = MAX(RB, 0.0)
 ! New Calculation of total Canopy/Stomatal Conductance Based on Bonan et al. (2011) 
 ! -- Inverse of Canopy Resistance (below)
              !IF(RSSUN .le. 0.0 .or. RSSHA .le. 0.0 .or. LAISUN .eq. 0.0 .or. LAISHA .eq. 0.0) THEN

@@ -528,6 +528,7 @@ subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
                   TRADXY,    NEEXY,    GPPXY,     NPPXY,   FVEGXY,   RUNSFXY, &
                   RUNSBXY,   ECANXY,   EDIRXY,   ETRANXY,    FSAXY,    FIRAXY, &
                   APARXY,    PSNXY,    SAVXY,     SAGXY,  RSSUNXY,   RSSHAXY, SWDN_3DXY, LWDN_3DXY, &
+                  SWDN_3D_DIRXY, SWDN_3D_DIFXY, SWDN_3D_REFLXY, &
                   BGAPXY,   WGAPXY,    TGVXY,     TGBXY,    CHVXY,     CHBXY, &
                   SHGXY,    SHCXY,    SHBXY,     EVGXY,    EVBXY,     GHVXY, &
                   GHBXY,    IRGXY,    IRCXY,     IRBXY,     TRXY,     EVCXY, &
@@ -752,6 +753,9 @@ subroutine update(zlvl,dt,lwdn,swdn,u_ml,v_ml,q_ml,t_ml,prcp,psfc,&
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  RSSUNXY   ! sunlit leaf stomatal resistance (s/m)
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  RSSHAXY   ! shaded leaf stomatal resistance (s/m)
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  SWDN_3DXY ! down shortwave radiation corrected for 3d topography (w/m2)
+    REAL,    DIMENSION(nhru), INTENT(INOUT) ::  SWDN_3D_DIRXY ! down shortwave radiation direct
+    REAL,    DIMENSION(nhru), INTENT(INOUT) ::  SWDN_3D_DIFXY ! down shortwave radiation diffused
+    REAL,    DIMENSION(nhru), INTENT(INOUT) ::  SWDN_3D_REFLXY ! down shortwave radiation reflected
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  LWDN_3DXY ! down longwave radiation corrected for 3d topography (w/m2)
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  BGAPXY    ! between gap fraction
     REAL,    DIMENSION(nhru), INTENT(INOUT) ::  WGAPXY    ! within gap fraction
@@ -1215,7 +1219,8 @@ endif
 	        TRADXY,    NEEXY,    GPPXY,     NPPXY,   FVEGXY,   RUNSFXY, & ! OUT Noah MP only
 	       RUNSBXY,   ECANXY,   EDIRXY,   ETRANXY,    FSAXY,    FIRAXY, & ! OUT Noah MP only
 	        APARXY,    PSNXY,    SAVXY,     SAGXY,  RSSUNXY,   RSSHAXY, SWDN_3DXY, LWDN_3DXY, & ! OUT Noah MP only
-		BGAPXY,   WGAPXY,    TGVXY,     TGBXY,    CHVXY,     CHBXY, & ! OUT Noah MP only
+           SWDN_3D_DIRXY, SWDN_3D_DIFXY, SWDN_3D_REFLXY, & ! OUT Noah MP only
+      BGAPXY,   WGAPXY,    TGVXY,     TGBXY,    CHVXY,     CHBXY, & ! OUT Noah MP only
 		 SHGXY,    SHCXY,    SHBXY,     EVGXY,    EVBXY,     GHVXY, & ! OUT Noah MP only
 		 GHBXY,    IRGXY,    IRCXY,     IRBXY,     TRXY,     EVCXY, & ! OUT Noah MP only
               CHLEAFXY,   CHUCXY,   CHV2XY,    CHB2XY, RS,                  & ! OUT Noah MP only
